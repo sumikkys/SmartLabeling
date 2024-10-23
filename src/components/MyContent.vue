@@ -3,6 +3,7 @@
   import { selection } from '../js/selection'
   import { isDotted } from '../js/isDotted'
   import { isBoxed } from '../js/isBoxed'
+  import { path } from '../js/path'
 
   let url = ref('https://segment-anything.com/assets/gallery/AdobeStock_94274587_welsh_corgi_pembroke_CD.jpg')
   let img = document.querySelector('.content-img') as HTMLImageElement
@@ -132,6 +133,12 @@
     }
     else if (newVal === false) { 
     }
+  })
+
+  watch(path,(newVal)=>{
+      if (newVal != null) {
+        url.value = newVal
+      }
   })
 
 </script>
