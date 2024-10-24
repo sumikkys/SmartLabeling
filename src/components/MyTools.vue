@@ -3,8 +3,12 @@
     import { selection } from '../js/selection'
     import { isDotted } from '../js/isDotted'
     import { isBoxed } from '../js/isBoxed'
+    import {path} from '../js/path'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
+    import MyUpLoad from './icons/MyUpLoadIcon.vue'
+    import MyGallary from './icons/MyGallaryIcon.vue'
+
 
     let timer: number | null = null
     let appear = ref(0)         // 0: none, 1: click, 2: box
@@ -18,6 +22,30 @@
     let boxAddTextClass = ref('selected-btn-text')
     let boxRemoveClass = ref('prohibit-btn')
     let boxRemoveTextClass = ref('prohibit-btn-text')
+
+    const fileInput = ref<HTMLInputElement | null>(null);
+
+    const selectFile = () => {
+        if (fileInput.value) {
+            fileInput.value.click();
+        }
+    };
+
+    const readFile = (event: Event) => {
+        const target = event.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (file && (file.type === 'image/jpeg' || file.type === 'image/jpg')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                if (e.target?.result) { // 使用可选链
+                   path.value = e.target.result as string; // 获取文件的 URL
+                }
+        };
+        reader.readAsDataURL(file); // 读取为 Data URL
+      } else {
+        alert('请选择一个 JPG 文件！');
+      }
+    }
 
     function ChangeOver(isOvered: boolean, value: string) {
         if (!isOvered) {
@@ -136,6 +164,10 @@
 <template>
     <ul class="myTools">Tools
         <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=#D3D3D3,strength=10)" width="90%" color=#D3D3D3 SIZE=2 />
+        <div style="text-align: left;" class="normal-btn"><input type="file" ref="fileInput" @change="readFile" accept=".jpg,.jpeg" style="display: none;" />
+            <button @click = "selectFile" class="upload-btn">&nbsp;&nbsp;<MyUpLoad></MyUpLoad>Upload</button>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button class="gallary-btn"><MyGallary></MyGallary>Gallary</button>
+        </div>
         <li @mouseover="MouseOverBTN('click')" @mouseout="MouseOutBTN('click')" @click="MouseClickBTN('click')" 
                 :class="selection === 1 ? 'selected-tool' : 'unselected-tool'" id="click">
             <div style="text-align: left">&nbsp;<MyClick></MyClick>&nbsp;&nbsp;Hover & Click</div>
@@ -182,13 +214,14 @@
 <style scoped>
     .myTools {
         color: #000000;
-        font: bold 20px Arial, sans-serif;
-        width: 200px;
-        height: 500px;
-        border: 1px solid #D3D3D3;
+        font: bold 30px Arial, sans-serif;
+        width: 300px;
+        height: 700px;
+        border: 2px solid #D3D3D3;
         border-radius: 15px;
         box-shadow: 0px 0px 10px 5px #D3D3D3;
-        padding: 10px;
+        padding: 15px;
+        margin-left: 30px;
         display: flex;
         list-style-type: none;
         flex-direction: column;
@@ -199,11 +232,11 @@
     .myTools .unselected-tool {
         background-color: #FFFFFF;
         color: #000000;
-        font: bold 18px Arial, sans-serif;
+        font: bold 21px Arial, sans-serif;
         border-radius: 15px;
         border: 2px solid #D3D3D3;
         padding: 5px 10px;
-        width: 80%;
+        width: 85%;
         margin: 10px;
         cursor: pointer;
     }
@@ -211,24 +244,56 @@
     .myTools .selected-tool {
         background-color: #FFFFFF;
         color: #2962D9;
-        font: bold 18px Arial, sans-serif;
+        font: bold 21px Arial, sans-serif;
         border-radius: 15px;
         border: 2px solid #2962D9;
         padding: 5px 10px;
-        width: 80%;
+        width: 85%;
         margin: 10px;
         cursor: pointer;
     }
 
+    .myTools .normal-btn {
+        color:#000000;
+        display: flex;
+        font : bold 21px Arial, sans-serif;
+        background-color: #FFFFFF;
+        border:2px solid #D3D3D3;
+        border-radius: 15px;
+        width: 88%;
+        height: 5%;
+        padding: 15px 5px 2px 5px;
+        justify-content: left;
+        margin:10 px;
+    }
+
+    .myTools .upload-btn {
+        background: none;
+        border: none;
+        color: inherit; 
+        font: inherit; 
+        padding: 0px 0px 3px 0px; 
+        cursor: pointer; 
+    }
+
+    .myTools .gallary-btn {
+        background: none;
+        border: none;
+        color: inherit; 
+        font: inherit; 
+        padding: 0px 0px 3px 0px; 
+        cursor: pointer; 
+    }
+
     li p {
-        font: 12px Arial, sans-serif;
+        font: 18px Arial, sans-serif;
         color: #BEBEBE;
         margin-top: 5px;
         word-break: keep-all;
     }
 
     .selected-tool p {    
-        font: 12px Arial, sans-serif;
+        font: 16px Arial, sans-serif;
         color: #2962D9;
         margin-top: 5px;
         word-break: keep-all;
@@ -251,54 +316,54 @@
 
     .mask-btns .selected-btn {
         color: #FFFFFF;
-        font: bold 28px Arial, sans-serif;
+        font: bold 36px Arial, sans-serif;
         background-color: #2962D9;
         border-radius: 5px;
         padding: 0%;
         margin: 0%;
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
     }
 
     .mask-btns .selected-btn-text {
         color: #2962D9;
-        font: bold 16px Arial, sans-serif;
+        font: bold 20px Arial, sans-serif;
         word-break: keep-all;
     }
 
     .mask-btns .unselected-btn {
         color: #000000;
-        font: bold 28px Arial, sans-serif;
+        font: bold 36px Arial, sans-serif;
         background-color: #FFFFFF;
         border: 1px solid #000000;
         border-radius: 5px; 
         padding: 0%;
         margin: 0%;
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
     }
 
     .mask-btns .unselected-btn-text {
         color: #000000;
-        font: bold 16px Arial, sans-serif;
+        font: bold 20px Arial, sans-serif;
         word-break: keep-all;
     }
 
     .mask-btns .prohibit-btn {
         color: #D3D3D3;
-        font: bold 28px Arial, sans-serif;
+        font: bold 32px Arial, sans-serif;
         background-color: #FFFFFF;
         border: 1px solid #D3D3D3;
         border-radius: 5px;
         padding: 0%;
         margin: 0%;
-        width: 30px;
-        height: 30px;
+        width: 40px;
+        height: 40px;
     }
 
     .mask-btns .prohibit-btn-text {
         color: #D3D3D3;
-        font: bold 16px Arial, sans-serif;
+        font: bold 20px Arial, sans-serif;
         word-break: keep-all;
     }
 
@@ -315,13 +380,16 @@
 
     .operation-btns .disabled {
         color: #BEBEBE;
-        font: bold 16px Arial, sans-serif;
+        font: bold 18px Arial, sans-serif;
         background-color: #E8E8E8;
         border: none;
-        width: 30%;
-        height: 20px;
+        width: 40%;
+        height: 30px;
         margin: 0%;
+        border-radius: 10px;
         cursor: pointer;
     }
+
+
 
 </style>
