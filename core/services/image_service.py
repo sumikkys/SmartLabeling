@@ -1,7 +1,7 @@
 import shutil
 import os
 from fastapi import UploadFile
-from schemas.image_schema import ImageUploadResponse, ImageResultResponse
+from schemas.image_schema import ImageUploadResponse
 
 def save_uploaded_image(image: UploadFile) -> ImageUploadResponse:
     try:    
