@@ -1,12 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.image_service import save_image
+from services.image_service import save_uploaded_image
 
 router = APIRouter()
 
 @router.post("/uploadimage")
 async def upload_image(image: UploadFile = File(...)):
     try:
-        processed_image_path = save_image(image)
+        processed_image_path = save_uploaded_image(image)
         return {
             "status": "success",
             "message": "Image uploaded and processed successfully",

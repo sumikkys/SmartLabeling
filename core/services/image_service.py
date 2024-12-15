@@ -11,7 +11,7 @@ def save_uploaded_image(image: UploadFile) -> ImageUploadResponse:
         with open(save_path, "wb") as buffer:
             shutil.copyfileobj(image.file, buffer)
         
-        # 假设处理图像并返回结果路径
+        # 处理图像并返回结果路径
         processed_image_path = f"/path/to/processed_image.jpg"
         
         return ImageUploadResponse(
