@@ -12,8 +12,9 @@ async def prompt(request: PromptRequest):
     image_path = "images/amos_0006_90.png"
     img_file = cv2.imread(image_path)
     img_embeddings = encoder(img_file)
+    response_data = PromptResponse
     try:
-        response_data = process_prompt(request)
+        response_data = process_prompt(request, img_embeddings, img_file)
         return PromptResponse(status="success", message="Operation completed", data=response_data)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

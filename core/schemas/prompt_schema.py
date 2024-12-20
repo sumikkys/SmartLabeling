@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Optional
+import numpy as np
 
 #请求体数据模型
 class PromptRequest(BaseModel):
@@ -11,4 +12,5 @@ class PromptRequest(BaseModel):
 class PromptResponse(BaseModel):
     status: str
     message: str
+    masks: np.ndarray = None
     data: Optional[dict]
