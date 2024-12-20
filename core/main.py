@@ -2,36 +2,8 @@ from fastapi import FastAPI, File, UploadFile
 import numpy as np
 import cv2
 from sam_model import SamEncoder, SamDecoder
+from initialize_model import initialize_models
 
-# encoder = SamEncoder(
-#     model_path="models/sam-med2d_b.encoder.onnx",
-#     warmup_epoch=3,
-#     device="cpu"
-# )
-# decoder = SamDecoder(
-#     model_path="models/sam-med2d_b.decoder.onnx",
-#     device="cpu",
-# )
-# if __name__ == '__main__':
-#     encoder_path = "models/sam-med2d_b.encoder.onnx"
-#     decoder_path = "models/sam-med2d_b.decoder.onnx"
-#
-#     # Initialize the SAM-Med2D onnx model
-#     encoder = SamEncoder(
-#         model_path=encoder_path,
-#         warmup_epoch=3,
-#         device="cpu"
-#     )
-#     decoder = SamDecoder(
-#         model_path=decoder_path,
-#         device="cpu",
-#     )
-#
-#     image_path = "images/amos_0004_75.png"
-#     '''Specifying a specific object with a point'''
-#     img_file = cv2.imread(image_path)
-#     img_embeddings = encoder(img_file)
-#
 #     # 一个点
 #     # _, logits = decoder.point(img_embeddings, img_file, point_coords=[[324, 282]], point_labels=[1])
 #
@@ -45,6 +17,8 @@ from sam_model import SamEncoder, SamDecoder
 #     # decoder.hybrid(img_embeddings, img_file, point_coords=[[324, 282]], point_labels=[0], boxes=[225, 153, 308, 240])
 
 app = FastAPI()
+
+initialize_models()
 
 if __name__ == "__main__":
     import uvicorn
