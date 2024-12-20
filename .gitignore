@@ -3,3 +3,5 @@ node_modules/
 core/models/
 core/.idea/
 core/__pycache__/
+.idea/
+core/__pycache__/*.pyc
