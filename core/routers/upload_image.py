@@ -1,27 +1,28 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
-from services.image_service import save_uploaded_image
+from fastapi import FastAPI, APIRouter, HTTPException
 from fastapi.responses import JSONResponse
-from schemas.image_schema import*
-from services.image_service import allowed_file, save_uploaded_file
+from services.image_service import save_image_from_path
+from schemas.image_schema import ImageResponse, ImageResponseData, ImageRequest
 
 router = APIRouter()
 
 @router.post("/uploadimage", response_model=ImageResponse)
-async def upload_image(image: UploadFile = File(...)):
-    # ����ļ�����
-    if not allowed_file(image.filename):
-        raise HTTPException(status_code=415, detail="Unsupported media type. Only JPEG, PNG, and BMP files are allowed.")
-    
+async def upload_image(image: ImageRequest):
+    """Rreceive an image from the client and save it to the server."""
     try:
-        file_location = await save_uploaded_file(image, image.filename)
+        # Image save directory
+        save_dir = "upload_images"
+        file_location = save_image_from_path(image.image_path, save_dir)
 
-        return JSONResponse(
-            content={
-                "status": "success",
-                "message": "Image uploaded successfully",
-                "data": ImageResponseData(image_path=str(file_location))
-            }
+        # 使用 Pydantic 模型来返回 JSON 响应
+        response_data = ImageResponse(
+            status="success",
+            message="Image uploaded successfully",
+            data=ImageResponseData(image_path=file_location)
         )
 
+        return response_data  # FastAPI 会自动将 Pydantic 模型转换为 JSON
+    
+    except HTTPException as e:
+        raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

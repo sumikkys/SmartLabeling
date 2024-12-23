@@ -1,6 +1,6 @@
 from fastapi import FastAPI, File, UploadFile
 from sam_model import SamEncoder, SamDecoder
-from routers import prompt, upload_image, get_result
+from routers import prompt, upload_image
 from initialize_models import initialize_models
 
 initialize_models()
@@ -8,8 +8,7 @@ initialize_models()
 app = FastAPI()
 
 app.include_router(prompt.router, tags=["Prompt"])
-app.include_router(upload_image.router, tags=["Upload Image"])
-app.include_router(get_result.router, tags=["Result"])
+app.include_router(upload_image.router, tags=["Upload Image"])  
 
 if __name__ == "__main__":
     import uvicorn

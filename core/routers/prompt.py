@@ -1,3 +1,4 @@
+# prompt.py
 from fastapi import APIRouter, HTTPException
 from schemas.prompt_schema import PromptRequest, PromptResponse
 from services.prompt_service import process_prompt
@@ -8,12 +9,12 @@ router = APIRouter()
 
 @router.post("/prompt", response_model=PromptResponse)
 async def prompt(request: PromptRequest):
-    global img_embeddings, img_file
-    image_path = "images/amos_0006_90.png"
-    img_file = cv2.imread(image_path)
-    img_embeddings = encoder(img_file)
-    response_data = PromptResponse
     try:
+        if encoder is None:
+            raise ValueError("Encoder is not initialized")
+        image_path = "images/amos_0006_90.png"
+        img_file = cv2.imread(image_path)
+        img_embeddings = encoder(img_file)
         response_data = process_prompt(request, img_embeddings, img_file)
         return PromptResponse(status="success", message="Operation completed", data=response_data)
     except Exception as e:

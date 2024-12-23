@@ -1,31 +1,34 @@
-from schemas.prompt_schema import PromptRequest, PromptResponse
+#prmpt_service.py
 from initialize_models import decoder
-from routers.prompt import img_embeddings, img_file
+from schemas.prompt_schema import PromptRequest, PromptResponse
 
 def generate_mask(operation, request, current_state, img_embeddings, img_file):
-    """根据当前操作选择是否生成掩码,并选择调用函数的类型"""
+    """Choose whether to generate a mask according to the current operation, and choose the type of function."""
+    if decoder is None:
+        raise ValueError("Decoder is not initialized")
     masks = None
-    if operation in ['add', 'undo', 'redo', 'remove']:  # 这些操作需要生成masks
+    if operation in ['add', 'undo', 'redo', 'remove']:  # These operations need to generate masks
         if request.type == 0:  # foreground
             masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["foreground"], point_labels=[1])
         elif request.type == 1:  # background
             masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["background"], point_labels=[0])
         elif request.type == 2:  # box
             masks, _ = decoder.bBox(img_embeddings, img_file, boxes=current_state["boxes"])
-    return masks
+            masks_2d = [sublist for matrix in masks for sublist in matrix]
+    return masks_2d
 
 class OperationManager:
     def __init__(self):
-        self.history = []  # 用于记录历史操作
-        self.future = []  # 用于记录未来操作
+        self.history = []  # record history operations
+        self.future = []  # record future operations
         self.current_state = {
             "foreground": [],
             "background": [],
             "boxes": []
-        }  # 用于存储当前状态
+        }  # record current state
 
     def add(self, request, img_embeddings, img_file):
-        """添加操作"""
+        """Add operation"""
         if request.type == 0:  # foreground
             self.current_state["foreground"].extend(request.position)
         elif request.type == 1:  # background
@@ -40,7 +43,7 @@ class OperationManager:
         return "Added successfully", masks
 
     def undo(self, img_embeddings, img_file):
-        """撤销操作"""
+        """Undo operation"""
         if self.history:
             operation, request = self.history.pop()
             if operation == 'add':
@@ -61,7 +64,7 @@ class OperationManager:
         return "No operation to undo", None
 
     def redo(self, img_embeddings, img_file):
-        """反撤销操作"""
+        """Redo operation"""
         if self.future:
             operation, request = self.future.pop()
             if operation == 'undo':
@@ -79,7 +82,7 @@ class OperationManager:
         return "No operation to redo", None
 
     def reset(self):
-        """重置操作"""
+        """Reset operation"""
         self.history.clear()
         self.future.clear()
         self.current_state = {
@@ -90,7 +93,7 @@ class OperationManager:
         return "All operations cleared", None
 
     def remove(self, request, img_embeddings, img_file):
-        """移除操作"""
+        """Remove operation"""
         if request.type == 0:  # foreground
             if request.position in self.current_state["foreground"]:
                 self.current_state["foreground"].remove(request.position)
@@ -120,7 +123,7 @@ class OperationManager:
         return "Operation completed", masks
 
     def get_current_state(self):
-        """获取当前状态"""
+        """Get the current state"""
         return self.current_state
 
 
