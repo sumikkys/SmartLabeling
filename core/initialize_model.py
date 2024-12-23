@@ -1,5 +1,6 @@
 import cv2
 from sam_model import SamEncoder, SamDecoder
+import os
 
 
 encoder = None
@@ -8,8 +9,9 @@ decoder = None
 def initialize_models():
     global encoder, decoder
 
-    encoder_path = "models/sam-med2d_b.encoder.onnx"
-    decoder_path = "models/sam-med2d_b.decoder.onnx"
+    base_path = os.path.dirname(__file__)
+    encoder_path = os.path.join(base_path,"models/sam-med2d_b.encoder.onnx")
+    decoder_path = os.path.join(base_path,"models/sam-med2d_b.decoder.onnx")
 
     # Initialize the SAM-Med2D ONNX model
     encoder = SamEncoder(
@@ -21,3 +23,5 @@ def initialize_models():
         model_path=decoder_path,
         device="cpu",
     )
+
+initialize_models()
