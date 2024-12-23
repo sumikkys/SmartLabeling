@@ -2,7 +2,7 @@ from fastapi import FastAPI, File, UploadFile
 import numpy as np
 import cv2
 from sam_model import SamEncoder, SamDecoder
-from initialize_model import initialize_models
+from initialize_model import encoder, decoder
 
 #     # 一个点
 #     # _, logits = decoder.point(img_embeddings, img_file, point_coords=[[324, 282]], point_labels=[1])
@@ -18,7 +18,8 @@ from initialize_model import initialize_models
 
 app = FastAPI()
 
-initialize_models()
+print(encoder is not None)
+print(decoder is not None)
 
 if __name__ == "__main__":
     import uvicorn
