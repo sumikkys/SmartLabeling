@@ -261,7 +261,7 @@ class SamDecoder:
         if logits is not None:
             mask_inputs = 1. / (1. + np.exp(-logits.astype(np.float32)))
             masks, _, logits = self.run(
-                img_embeddings=img_embeddings,
+                img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
                 point_labels=point_labels,
@@ -269,7 +269,7 @@ class SamDecoder:
             )
         else:
             masks, _, logits = self.run(
-                img_embeddings=img_embeddings,
+                img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
                 point_labels=point_labels,
@@ -300,6 +300,8 @@ class SamDecoder:
         plt.axis('off')
         plt.show()
 
+        return masks, logits
+
     def hybrid(self, image_embeddings, img_file, point_coords, point_labels, boxes, logits=None):
         origin_image_size = img_file.shape[:2]
         point_coords = np.array(point_coords, dtype=np.float32)
@@ -308,7 +310,7 @@ class SamDecoder:
         if logits is not None:
             mask_inputs = 1. / (1. + np.exp(-logits.astype(np.float32)))
             masks, _, logits = self.run(
-                img_embeddings=img_embeddings,
+                img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
                 point_labels=point_labels,
@@ -317,7 +319,7 @@ class SamDecoder:
             )
         else:
             masks, _, logits = self.run(
-                img_embeddings=img_embeddings,
+                img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
                 point_labels=point_labels,
