@@ -13,14 +13,13 @@ async def upload_image(image: ImageRequest):
         save_dir = "upload_images"
         file_location = save_image_from_path(image.image_path, save_dir)
 
-        # 使用 Pydantic 模型来返回 JSON 响应
         response_data = ImageResponse(
             status="success",
             message="Image uploaded successfully",
             data=ImageResponseData(image_path=file_location)
         )
 
-        return response_data  # FastAPI 会自动将 Pydantic 模型转换为 JSON
+        return response_data 
     
     except HTTPException as e:
         raise e

@@ -1,12 +1,14 @@
 #prmpt_service.py
-from initialize_models import decoder
+from initialize_model import decoder
 from schemas.prompt_schema import PromptRequest, PromptResponse
+from typing import List
 
 def generate_mask(operation, request, current_state, img_embeddings, img_file):
     """Choose whether to generate a mask according to the current operation, and choose the type of function."""
     if decoder is None:
         raise ValueError("Decoder is not initialized")
     masks = None
+    masks_2d = List[List[float]] 
     if operation in ['add', 'undo', 'redo', 'remove']:  # These operations need to generate masks
         if request.type == 0:  # foreground
             masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["foreground"], point_labels=[1])
@@ -14,7 +16,8 @@ def generate_mask(operation, request, current_state, img_embeddings, img_file):
             masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["background"], point_labels=[0])
         elif request.type == 2:  # box
             masks, _ = decoder.bBox(img_embeddings, img_file, boxes=current_state["boxes"])
-            masks_2d = [sublist for matrix in masks for sublist in matrix]
+        masks_list = masks.tolist()
+        masks_2d = [sublist for matrix in masks_list for sublist in matrix]
     return masks_2d
 
 class OperationManager:
