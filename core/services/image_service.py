@@ -24,7 +24,7 @@ def save_image_from_path(image_path: str, save_dir: str) -> str:
     
     try:
         image = Image.open(image_path)
-        # Èç¹ûÍ¼ÏñÊÇ RGBA Ä£Ê½£¬Ôò×ª»»Îª RGB Ä£Ê½
+        # å¦‚æœå›¾åƒæ˜¯ RGBA æ¨¡å¼ï¼Œåˆ™è½¬æ¢ä¸º RGB æ¨¡å¼
         if image.mode == 'RGBA':
             image = image.convert('RGB')
         image.save(target_path)  # Save the image to the target path
