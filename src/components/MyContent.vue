@@ -6,7 +6,6 @@
   import { path } from '../js/path'
 
   let url = ref('https://segment-anything.com/assets/gallery/AdobeStock_94274587_welsh_corgi_pembroke_CD.jpg')
-  // let img = ref<HTMLImageElement | null>(null)
 
   let pos = ref({
     x: 0,
