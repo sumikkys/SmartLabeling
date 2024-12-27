@@ -273,6 +273,7 @@
     }
   })
 
+
   watch(path,(newVal)=> {
       if (newVal != null) {
         url.value = newVal
@@ -280,6 +281,7 @@
         isDotMasked.value = true
         Boxes.removeBox()
         draw_Image(url.value);  // 重新加载并绘制新图片
+
       }
   })
 
@@ -323,4 +325,5 @@
         margin: 0;
         position: absolute;
     }
+
 </style>
