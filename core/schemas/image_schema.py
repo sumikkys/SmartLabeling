@@ -9,6 +9,5 @@ class ImageResponse(BaseModel):
     message: str
     data: ImageResponseData
     
-# 定义请求体的 Pydantic 模型
 class ImageRequest(BaseModel):
-    image_path: str  # 从请求体中接收路径字段
+    image_path: str 

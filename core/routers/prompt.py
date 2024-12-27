@@ -6,7 +6,6 @@ from initialize_model import encoder
 import cv2
 import logging
 
-# ≈‰÷√»’÷æº«¬º
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
