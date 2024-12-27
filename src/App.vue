@@ -13,7 +13,11 @@
   </div>
 </template>
 
-<style scoped>
+<style>
+  :root {
+    font-size: 10px;
+  }
+
   .item1 { 
     grid-area: header; 
   }
@@ -36,16 +40,16 @@
     'header header header header header header'
     'menu main main main main main'
     'menu footer footer footer footer footer';
-    grid-gap: 8px;
+    grid-gap: 0;
     background-color: white;
-    grid-template-rows: 100px auto 100px;
-    z-index: -1;
+    grid-template-rows: 10vh 80vh 5vh;
+    grid-template-columns: repeat(6, 1fr);
     position: absolute;
   }
 
   .grid-container > div {
     text-align: center;
-    padding: 2px 0;
-    font-size: 30px;
+    padding: 0;
+    font-size: 3rem;
   }
 </style>
