@@ -40,10 +40,8 @@ app.on("window-all-closed", () => {
   if (python) {
     python.kill();
   }
-  if (process.platform !== "darwin") {
-    app.quit();
-    win = null;
-  }
+  app.quit();
+  win = null;
 });
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {

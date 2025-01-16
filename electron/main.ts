@@ -69,10 +69,12 @@ app.on('window-all-closed', () => {
   if (python) {
     python.kill();  // 关闭 Python 进程
   }
-  if (process.platform !== 'darwin') {
-    app.quit()
-    win = null
-  }
+  // if (process.platform !== 'darwin') {
+  //   app.quit()
+  //   win = null
+  // }
+  app.quit()
+  win = null
 })
 
 app.on('activate', () => {
