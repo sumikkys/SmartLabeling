@@ -1,11 +1,9 @@
 <script setup lang="ts">
     import { ref , watch } from 'vue'
     import { selection } from '../js/selection'
-
     import { Dots, isDotMasked } from '../js/Dots'
     import { Boxes } from '../js/Boxes'
     import { path } from '../js/path'
-
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
     import MyUpLoad from './icons/MyUpLoadIcon.vue'
@@ -22,30 +20,6 @@
     let ResetClass = ref('disabled')
     let UndoClass = ref('disabled')
     let RedoClass = ref('disabled')
-
-    const fileInput = ref<HTMLInputElement | null>(null);
-
-    const selectFile = () => {
-        if (fileInput.value) {
-            fileInput.value.click();
-        }
-    };
-
-    const readFile = (event: Event) => {
-        const target = event.target as HTMLInputElement;
-        const file = target.files?.[0];
-        if (file && (file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (e.target?.result) { // 使用可选链
-                   path.value = e.target.result as string; // 获取文件的 URL
-                }
-        };
-        reader.readAsDataURL(file); // 读取为 Data URL
-      } else {
-        alert('请选择一个 JPG 文件！');
-      }
-    }
 
     const fileInput = ref<HTMLInputElement | null>(null);
 
@@ -254,7 +228,6 @@
 <template>
     <ul class="myTools">Tools
         <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=#D3D3D3,strength=10)" width="90%" color=#D3D3D3 SIZE=2 />
-
         <li style="text-align: left;" class="normal-btn"><input type="file" ref="fileInput" @change="readFile" accept=".jpg,.jpeg" style="display: none;" />
             <button @click = "selectFile" class="upload-btn">&nbsp;&nbsp;<MyUpLoad></MyUpLoad>Upload</button>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button class="gallary-btn"><MyGallary></MyGallary>Gallary</button>
@@ -294,7 +267,6 @@
 <style scoped>
     .myTools {
         color: #000000;
-
         font: bold 2.5rem Arial, sans-serif;
         width: 15vw;
         height: 70vh;
@@ -303,7 +275,6 @@
         box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
         padding: 1.5rem;
         margin-left: 3rem;
-
         display: flex;
         list-style-type: none;
         flex-direction: column;
@@ -351,7 +322,6 @@
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
-
         cursor: pointer;
     }
 
@@ -376,45 +346,11 @@
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
-
         cursor: pointer;
-    }
-
-    .myTools .normal-btn {
-        color:#000000;
-        display: flex;
-        font : bold 21px Arial, sans-serif;
-        background-color: #FFFFFF;
-        border:2px solid #D3D3D3;
-        border-radius: 15px;
-        width: 88%;
-        height: 5%;
-        padding: 15px 5px 2px 5px;
-        justify-content: left;
-        margin:10 px;
-    }
-
-    .myTools .upload-btn {
-        background: none;
-        border: none;
-        color: inherit; 
-        font: inherit; 
-        padding: 0px 0px 3px 0px; 
-        cursor: pointer; 
-    }
-
-    .myTools .gallary-btn {
-        background: none;
-        border: none;
-        color: inherit; 
-        font: inherit; 
-        padding: 0px 0px 3px 0px; 
-        cursor: pointer; 
     }
 
     li p {
         font: 1.2rem Arial, sans-serif;
-
         color: #BEBEBE;
         margin-top: 0.5rem;
         word-break: keep-all;
@@ -441,7 +377,6 @@
     .mask-btns .selected-btn {
         color: #FFFFFF;
         font: bold 2.5rem Arial, sans-serif;
-
         background-color: #2962D9;
         border-radius: 0.5rem;
         padding: 0%;
@@ -461,23 +396,19 @@
     .mask-btns .unselected-btn {
         color: #000000;
         font: bold 2.5rem Arial, sans-serif;
-
         background-color: #FFFFFF;
         border: 0.1rem solid #000000;
         border-radius: 0.5rem;
         padding: 0%;
         margin: 0%;
-
         width: 3rem;
         height: 3rem;
         cursor: pointer;
-
     }
 
     .mask-btns .unselected-btn-text {
         color: #000000;
         font: bold 1.5rem Arial, sans-serif;
-
         word-break: keep-all;
         cursor: pointer;
     }
@@ -485,7 +416,6 @@
     .mask-btns .prohibit-btn {
         color: #D3D3D3;
         font: bold 2.5rem Arial, sans-serif;
-
         background-color: #FFFFFF;
         border: 0.1rem solid #D3D3D3;
         border-radius: 0.5rem;
@@ -494,13 +424,11 @@
         width: 3rem;
         height: 3rem;
         cursor: default;
-
     }
 
     .mask-btns .prohibit-btn-text {
         color: #D3D3D3;
         font: bold 1.5rem Arial, sans-serif;
-
         word-break: keep-all;
         cursor: default;
     }
@@ -540,4 +468,3 @@
         cursor: default;
     }
 </style>
-
