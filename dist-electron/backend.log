@@ -1,163 +1,0 @@
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:00,  2.04it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.42it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.68it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.55it/s]
-
-[STDERR] INFO:     Started server process [19493]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDERR] INFO:     Shutting down
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:00,  2.29it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.57it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.69it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.63it/s]
-
-[STDERR] INFO:     Started server process [20551]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:01,  1.73it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.22it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.54it/s]100%|██████████| 3/3 [00:01<00:00,  2.37it/s]
-
-[STDERR] INFO:     Started server process [20726]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDERR] INFO:     Shutting down
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:01,  1.72it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.24it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.54it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.37it/s]
-
-[STDERR] INFO:     Started server process [20924]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:01,  1.82it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.25it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.55it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.40it/s]
-
-[STDERR] INFO:     Started server process [21297]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:00,  2.38it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.68it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.84it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.76it/s]
-
-[STDERR] INFO:     Started server process [21436]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:00,  2.41it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.42it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.50it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.47it/s]
-
-[STDERR] INFO:     Started server process [21721]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:01,  1.98it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.46it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.78it/s]100%|██████████| 3/3 [00:01<00:00,  2.61it/s]
-
-[STDERR] INFO:     Started server process [24783]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8132 (Press CTRL+C to quit)
-
-[STDERR] INFO:     Shutting down
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:00,  2.33it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.40it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.66it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.57it/s]
-
-[STDERR] INFO:     Started server process [25022]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
-[STDOUT] loading encoder model...
-start warmup!
-
-[STDERR]   0%|          | 0/3 [00:00<?, ?it/s]
-[STDERR]  33%|███▎      | 1/3 [00:00<00:00,  2.52it/s]
-[STDERR]  67%|██████▋   | 2/3 [00:00<00:00,  2.52it/s]
-[STDERR] 100%|██████████| 3/3 [00:01<00:00,  2.78it/s]100%|██████████| 3/3 [00:01<00:00,  2.70it/s]
-
-[STDERR] INFO:     Started server process [29504]
-INFO:     Waiting for application startup.
-
-[STDERR] INFO:     Application startup complete.
-
-[STDERR] INFO:     Uvicorn running on http://localhost:8232 (Press CTRL+C to quit)
-
