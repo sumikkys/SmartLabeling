@@ -2,13 +2,15 @@ import { app, BrowserWindow } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { exec, ChildProcess} from 'child_process'
-
+// import { exec, ChildProcess} from 'child_process'
+import { spawn, ChildProcess } from 'child_process'
+import fs from 'fs'
 
 const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let python: ChildProcess | null = null;
+const logStream = fs.createWriteStream(path.join(__dirname, 'backend.log'), { flags: 'a' });
 
 
 // The built directory structure
@@ -50,15 +52,37 @@ function createWindow() {
     // win.loadFile('dist/index.html')
     win.loadFile(path.join(RENDERER_DIST, 'index.html'))
   }
+  // python = exec('python ./core/main.py', (error, stdout, stderr) => {
+  //   if (error) {
+  //     console.error(`Error starting Python: ${error}`);
+  //     return;
+  //   }else{
+  //     console.log('Python started successfully');
+  //   }
+  //   console.log(`stdout: ${stdout}`);
+  //   console.error(`stderr: ${stderr}`);
+  // });
+}
 
+function createPythonProcess() {
   // 启动 Python 后端
-  python = exec('python ./core/main.py', (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error starting Python: ${error}`);
-      return;
-    }
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
+  python = spawn('python', ['./core/main.py', '--host', 'localhost', '--port', '8232'], { stdio: ['ignore', 'pipe', 'pipe'] });
+
+  python.stdout?.on('data', (data) => {
+    const message = data.toString();
+    console.log(`Backend: ${message}`);
+    logStream.write(`[STDOUT] ${message}\n`);
+  });
+
+  python.stderr?.on('data', (data) => {
+    const message = data.toString();
+    console.log(`Backend: ${message}`);
+    logStream.write(`[STDERR] ${message}\n`);
+  });
+
+  python.on('close', (code) => {
+    console.log(`Python 进程退出，退出码: ${code}`);
+    logStream.write(`[EXIT] Python 进程退出，退出码: ${code}\n`);
   });
 }
 
@@ -66,15 +90,14 @@ function createWindow() {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (python) {
-    python.kill();  // 关闭 Python 进程
+  // 在非macOS平台上，关闭所有窗口时退出应用程序
+  if (process.platform !== 'darwin') {
+    if (python) {
+      python.kill();  // 关闭 Python 进程
+    }
+    app.quit()
+    win = null
   }
-  // if (process.platform !== 'darwin') {
-  //   app.quit()
-  //   win = null
-  // }
-  app.quit()
-  win = null
 })
 
 app.on('activate', () => {
@@ -92,4 +115,4 @@ app.on('before-quit', () => {
 })
 
 
-app.whenReady().then(createWindow)
+app.whenReady().then(createWindow).then(createPythonProcess)

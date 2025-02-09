@@ -2,10 +2,12 @@ import { app, BrowserWindow } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { exec } from "child_process";
+import { spawn } from "child_process";
+import fs from "fs";
 createRequire(import.meta.url);
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 let python = null;
+const logStream = fs.createWriteStream(path.join(__dirname, "backend.log"), { flags: "a" });
 process.env.APP_ROOT = path.join(__dirname, "..");
 const VITE_DEV_SERVER_URL = process.env["VITE_DEV_SERVER_URL"];
 const MAIN_DIST = path.join(process.env.APP_ROOT, "dist-electron");
@@ -27,21 +29,36 @@ function createWindow() {
   } else {
     win.loadFile(path.join(RENDERER_DIST, "index.html"));
   }
-  python = exec("python ./core/main.py", (error, stdout, stderr) => {
-    if (error) {
-      console.error(`Error starting Python: ${error}`);
-      return;
-    }
-    console.log(`stdout: ${stdout}`);
-    console.error(`stderr: ${stderr}`);
+}
+function createPythonProcess() {
+  var _a, _b;
+  python = spawn("python", ["./core/main.py", "--host", "localhost", "--port", "8232"], { stdio: ["ignore", "pipe", "pipe"] });
+  (_a = python.stdout) == null ? void 0 : _a.on("data", (data) => {
+    const message = data.toString();
+    console.log(`Backend: ${message}`);
+    logStream.write(`[STDOUT] ${message}
+`);
+  });
+  (_b = python.stderr) == null ? void 0 : _b.on("data", (data) => {
+    const message = data.toString();
+    console.log(`Backend: ${message}`);
+    logStream.write(`[STDERR] ${message}
+`);
+  });
+  python.on("close", (code) => {
+    console.log(`Python 进程退出，退出码: ${code}`);
+    logStream.write(`[EXIT] Python 进程退出，退出码: ${code}
+`);
   });
 }
 app.on("window-all-closed", () => {
-  if (python) {
-    python.kill();
+  if (process.platform !== "darwin") {
+    if (python) {
+      python.kill();
+    }
+    app.quit();
+    win = null;
   }
-  app.quit();
-  win = null;
 });
 app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
@@ -53,7 +70,7 @@ app.on("before-quit", () => {
     python.kill();
   }
 });
-app.whenReady().then(createWindow);
+app.whenReady().then(createWindow).then(createPythonProcess);
 export {
   MAIN_DIST,
   RENDERER_DIST,

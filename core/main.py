@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from initialize_model import encoder, decoder
 from routers import prompt, upload_image
+import argparse
 
 # 一个点
 # _, logits = decoder.point(img_embeddings, img_file, point_coords=[[324, 282]], point_labels=[1])
@@ -22,5 +23,9 @@ app.include_router(prompt.router, tags=["Prompt"])
 app.include_router(upload_image.router, tags=["Upload Image"]) 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='params')
+    parser.add_argument('--host', type=str, default='localhost', help='host')
+    parser.add_argument('--port', type=int, default=8232, help='port')
+    
     import uvicorn
-    uvicorn.run(app, host="localhost", port=8232)
+    uvicorn.run(app, host="localhost", port=parser.parse_args().port)
