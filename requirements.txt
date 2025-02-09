@@ -1,0 +1,7 @@
+opencv-python~=4.10.0.84
+fastapi~=0.115.0
+matplotlib~=3.9.2
+numpy~=1.26.4
+onnxruntime~=1.17.1
+tqdm~=4.66.4
+torchvision~=0.19.1
