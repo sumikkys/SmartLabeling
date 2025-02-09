@@ -28,4 +28,4 @@ if __name__ == "__main__":
     parser.add_argument('--port', type=int, default=8232, help='port')
     
     import uvicorn
-    uvicorn.run(app, host="localhost", port=parser.parse_args().port)
+    uvicorn.run(app, host=parser.parse_args().host, port=parser.parse_args().port)
