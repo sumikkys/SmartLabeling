@@ -1,3 +1,4 @@
+# image_schema.py
 from pydantic import BaseModel
 from pathlib import Path
 

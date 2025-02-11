@@ -1,4 +1,4 @@
-#prmpt_service.py
+# prmpt_service.py
 from initialize_model import decoder
 from schemas.prompt_schema import PromptRequest, PromptResponse
 from typing import List
