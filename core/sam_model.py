@@ -11,7 +11,7 @@ from PIL import Image
 import io
 import numpy as np
 import cv2
-
+from routers import polling
 
 
 class SamEncoder:
@@ -68,6 +68,7 @@ class SamEncoder:
         for i in tqdm(range(epoch)):
             self.session.run(None, {self.input_name: x})
         print("warmup finish!")
+        polling.initialized = True
 
     def transform(self, img: np.ndarray) -> np.ndarray:
         """image transform

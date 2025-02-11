@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from initialize_model import encoder, decoder
-from routers import prompt, upload_image
+from routers import prompt, upload_image, polling
 import argparse
 
 # 一个点
@@ -21,11 +21,12 @@ print(f"Decoder initialized: {decoder is not None}")
 
 app.include_router(prompt.router, tags=["Prompt"])
 app.include_router(upload_image.router, tags=["Upload Image"]) 
+app.include_router(polling.router, tags=["Polling"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='params')
     parser.add_argument('--host', type=str, default='localhost', help='host')
-    parser.add_argument('--port', type=int, default=8232, help='port')
+    parser.add_argument('--port', type=int, default=8000, help='port')
     
     import uvicorn
     uvicorn.run(app, host=parser.parse_args().host, port=parser.parse_args().port)

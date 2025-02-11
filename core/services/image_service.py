@@ -1,3 +1,4 @@
+# image_service.py
 import os
 from fastapi import HTTPException
 from PIL import Image
@@ -24,7 +25,7 @@ def save_image_from_path(image_path: str, save_dir: str) -> str:
     
     try:
         image = Image.open(image_path)
-        # 如果图像是 RGBA 模式，则转换为 RGB 模式
+        # 如果图像�? RGBA 模式，则�?�?�? RGB 模式
         if image.mode == 'RGBA':
             image = image.convert('RGB')
         image.save(target_path)  # Save the image to the target path
