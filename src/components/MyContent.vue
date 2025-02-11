@@ -4,6 +4,8 @@
   import { Dots, isDotMasked } from '../js/Dots'
   import { Boxes } from '../js/Boxes'
   import { path } from '../js/path'
+  import axios from 'axios'
+  import type { AxiosError } from 'axios'
 
   let url = ref('https://segment-anything.com/assets/gallery/AdobeStock_94274587_welsh_corgi_pembroke_CD.jpg')
 
@@ -39,10 +41,75 @@
   let pos_y = 0
 
   const myCanvas = ref()
+  // Axios 实例配置
+  const api = axios.create({
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  })
+  // 定义 error 变量
+const error = ref<string | null>(null)
+
+  // 定义增强型错误类型
+type EnhancedError = 
+  | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
+  | Error                              // 标准错误对象
+  | string                             // 字符串类型的错误消息
+
+// 统一错误处理函数
+const handleError = (err: EnhancedError) => {
+  // 处理字符串类型错误
+  if (typeof err === 'string') {
+    error.value = err
+    console.error('API Error:', err)
+    return
+  }
+
+  // 处理Error对象
+  if (err instanceof Error) {
+    // 类型断言为AxiosError
+    const axiosError = err as AxiosError<{ message?: string }>
+    
+    // 处理带响应的错误
+    if (axiosError.response) {
+      // 状态码映射
+      const statusMessage = (() => {
+        switch (axiosError.response.status) {
+          case 400: return '请求参数错误'
+          case 404: return '资源不存在'
+          case 415: return '不支持的媒体类型'
+          case 500: return '服务器内部错误'
+          default: return `请求失败 (${axiosError.response.status})`
+        }
+      })()
+
+      error.value = axiosError.response.data?.message || statusMessage
+      console.error('API Error:', {
+        status: axiosError.response.status,
+        message: axiosError.message,
+        url: axiosError.config?.url,
+        data: axiosError.response.data
+      })
+    } 
+    // 处理无响应的网络错误
+    else if (axiosError.request) {
+      error.value = '网络连接异常，请检查网络'
+      console.error('Network Error:', axiosError.message)
+    }
+    // 处理其他Error类型
+    else {
+      error.value = err.message
+      console.error('Runtime Error:', err)
+    }
+  }
+}  
 
   onMounted(() => {
     draw_Image(url.value) // 初始绘制图片
+
   })
+
+
 
   function draw_Image(imageSrc: string) {
     // 确保图片清晰度，并初始化 canvas
@@ -77,6 +144,7 @@
             y: (pos.value.y - pos_y) / zoom_y
         }
         drawPoint(e)
+        sendPointData()
         if (!Dots.isDotted.value) {
             Dots.isDotted.value = true
         }
@@ -113,6 +181,7 @@
           return
         }
         drawBox(e)
+        sendBoxData()
         if (!Boxes.isBoxed.value) {
             Boxes.isBoxed.value = true
         }
@@ -120,6 +189,47 @@
     })
   }
 
+
+    // 发送点
+const sendPointData = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 0,
+      "type": isDotMasked.value ? 0 : 1,
+      "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('Prompt 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}  
+}
+//发送框
+const sendBoxData = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 0,
+      "type": 2,
+      "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)]
+        }
+      ) 
+      //在这里处理数据
+      console.log('Prompt 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}  
+}
   // 画点
   function drawPoint(e: MouseEvent) {
     const canvas = myCanvas.value
@@ -140,6 +250,9 @@
       Dots.addDot(e.offsetX, e.offsetY, 1)
     }
   }
+  
+
+  
 
   // 仅用于绘制数组里点（画矩形和undo操作删除的点）
   function drawPointByXY(x: number, y: number, dot_type: number) {
