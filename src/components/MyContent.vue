@@ -47,6 +47,7 @@
       'Content-Type': 'application/json'
     }
   })
+
   // 定义 error 变量
 const error = ref<string | null>(null)
 
@@ -106,8 +107,28 @@ const handleError = (err: EnhancedError) => {
 
   onMounted(() => {
     draw_Image(url.value) // 初始绘制图片
-
+    checkBackendReady();
   })
+
+  function checkBackendReady() {
+    const interval = setInterval(async() => {
+        try {
+          const response = await api.get('/api/status') 
+          if(response.data.initialized){
+            clearInterval(interval);
+            console.log("后端初始化完成！");
+            // 这里可以执行后续逻辑
+        }
+      }catch (err: unknown) {
+        // 类型安全的错误转换
+      if (err instanceof Error) {
+        handleError(err)
+      } else {
+        handleError(String(err))
+      }
+    }
+    }, 1000);  // 每秒检查一次
+}
 
 
 
@@ -221,6 +242,7 @@ const sendBoxData = async() => {
       ) 
       //在这里处理数据
       console.log('Prompt 操作结果:', response.data)
+      
     }  catch (err: unknown) {
   // 类型安全的错误转换
   if (err instanceof Error) {
@@ -230,6 +252,26 @@ const sendBoxData = async() => {
   }
 }  
 }
+//发送图片
+const sendImageData = async () => {
+  try {
+      const response = await api.post('/api/uploadimage',{
+        "image_path": "D:/webcode/test_image_jpeg.jpeg"//这里改为文件地址
+      }
+      ) 
+      //在这里处理数据
+      console.log('upLoadImage 操作结果:', response.data)
+      
+    }catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}      
+};
+
   // 画点
   function drawPoint(e: MouseEvent) {
     const canvas = myCanvas.value
@@ -389,6 +431,7 @@ const sendBoxData = async() => {
   watch(path,(newVal)=> {
       if (newVal != null) {
         url.value = newVal
+        sendImageData()
         Dots.removeDots()
         isDotMasked.value = true
         Boxes.removeBox()
