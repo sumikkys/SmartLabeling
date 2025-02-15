@@ -1,42 +1,42 @@
- # API ½Ó¿ÚËµÃ÷ÎÄµµ
+ # API æŽ¥å£è¯´æ˜Žæ–‡æ¡£
  
- # ÉùÃ÷£º´ËÎÄµµÎªÏîÄ¿¿ª·¢¹ý³ÌÖÐËù¼ÇÂ¼µÄ½Ó¿ÚËµÃ÷
- # µ±Ç°°æ±¾£ºÇ°ºó¶Ë±¾µØÔËÐÐ£¬Éæ¼°Êý¾ÝÎª±¾»úÊý¾Ý£¬²¿·ÖÊý¾Ý£¨ÈçÍ¼Æ¬£©´«Êä½ö´«ÊäÂ·¾¶
- # ¸üÐÂÊ±¼ä£º2024.12.23
+ # å£°æ˜Žï¼šæ­¤æ–‡æ¡£ä¸ºé¡¹ç›®å¼€å‘è¿‡ç¨‹ä¸­æ‰€è®°å½•çš„æŽ¥å£è¯´æ˜Ž
+ # å½“å‰ç‰ˆæœ¬ï¼šå‰åŽç«¯æœ¬åœ°è¿è¡Œï¼Œæ¶‰åŠæ•°æ®ä¸ºæœ¬æœºæ•°æ®ï¼Œéƒ¨åˆ†æ•°æ®ï¼ˆå¦‚å›¾ç‰‡ï¼‰ä¼ è¾“ä»…ä¼ è¾“è·¯å¾„
+ # æ›´æ–°æ—¶é—´ï¼š2024.12.23
 
 1. Prompt
 
  URL: `/prompt`
 
- ·½·¨: `POST`
+ æ–¹æ³•: `POST`
 
- ÃèÊö: **ÉÏ´«ÓÃ»§Ö¸ÁîµÄprompt·µ»ØÏàÓ¦µÄÏìÓ¦**
+ æè¿°: **ä¸Šä¼ ç”¨æˆ·æŒ‡ä»¤çš„promptè¿”å›žç›¸åº”çš„å“åº”**
 
- ÇëÇó¸ñÊ½: `json`:
+ è¯·æ±‚æ ¼å¼: `json`:
   ```json:
     {
         "operation": 0,     /* int
                             0:add 
-                            1:undo  ³·Ïú
-                            2:reset Çå¿Õµ±Ç°²Ù×÷
-                            3:redo  ·´³·Ïú
+                            1:undo  æ’¤é”€
+                            2:reset æ¸…ç©ºå½“å‰æ“ä½œ
+                            3:redo  åæ’¤é”€
                             4:remove
                             */
 
         "type": 0,          /* int 
-                            0:Ç°¾°µã  
-                            1:±³¾°µã
-                            2£º¿ò
+                            0:å‰æ™¯ç‚¹  
+                            1:èƒŒæ™¯ç‚¹
+                            2ï¼šæ¡†
                             */
     
         "position":[[]]     /* array
-                            µã×ø±êÊ¾Àý£º[[x,y]] 
-                            ¿ò×ø±êÊ¾Àý: [x1,y1,x2,y2]
+                            ç‚¹åæ ‡ç¤ºä¾‹ï¼š[[x,y]] 
+                            æ¡†åæ ‡ç¤ºä¾‹: [x1,y1,x2,y2]
                             */
     }
   ```
 
- ÇëÇóÊ¾Àý:
+ è¯·æ±‚ç¤ºä¾‹:
    ```json
     {
         "operation": 0,
@@ -45,12 +45,12 @@
     }
     ```
 
- ÏìÓ¦Ê¾Àý: //ÒÔaddÒ»¸öforegroundÎªÀý
+ å“åº”ç¤ºä¾‹: //ä»¥addä¸€ä¸ªforegroundä¸ºä¾‹
   ```json
   {
     "status": "success",
     "message": "Added successfully",
-    "masks": [[]],  //***Ç°¶ËÊÕµ½µÄmasksÎªÒ»¸ö¶þÎ¬Êý×é***
+    "masks": [[]],  //***å‰ç«¯æ”¶åˆ°çš„masksä¸ºä¸€ä¸ªäºŒç»´æ•°ç»„***
     "data": {
         "foreground": [
             [
@@ -64,30 +64,30 @@
 }
   ```
 
- ´íÎó×´Ì¬Âë:
-    `400`	´íÎóÇëÇó£ºÇëÇó²ÎÊýÓÐÎó»òÈ±Ê§
-    `404`	ÕÒ²»µ½×ÊÔ´£ºÇëÇóµÄ×ÊÔ´²»´æÔÚ
-    `500`	·þÎñÆ÷´íÎó£º·þÎñÆ÷´¦ÀíÇëÇóÊ±³öÏÖÄÚ²¿´íÎó
+ é”™è¯¯çŠ¶æ€ç :
+    `400`	é”™è¯¯è¯·æ±‚ï¼šè¯·æ±‚å‚æ•°æœ‰è¯¯æˆ–ç¼ºå¤±
+    `404`	æ‰¾ä¸åˆ°èµ„æºï¼šè¯·æ±‚çš„èµ„æºä¸å­˜åœ¨
+    `500`	æœåŠ¡å™¨é”™è¯¯ï¼šæœåŠ¡å™¨å¤„ç†è¯·æ±‚æ—¶å‡ºçŽ°å†…éƒ¨é”™è¯¯
 
- 2. ÉÏ´«Í¼Ïñ
+ 2. ä¸Šä¼ å›¾åƒ
 
  URL: `/uploadimage`
 
- ·½·¨: `POST`
+ æ–¹æ³•: `POST`
 
- ÃèÊö: **¸Ã½Ó¿ÚÓÃÓÚ½ÓÊÕÓÃ»§ÉÏ´«µÄÍ¼Ïñ**
+ æè¿°: **è¯¥æŽ¥å£ç”¨äºŽæŽ¥æ”¶ç”¨æˆ·ä¸Šä¼ çš„å›¾åƒ**
 
- ÇëÇó¸ñÊ½: `multipart/formdata`
+ è¯·æ±‚æ ¼å¼: `multipart/formdata`
 
- ÇëÇóÊ¾Àý:
+ è¯·æ±‚ç¤ºä¾‹:
     POST /uploadimage
 
     {
-        "image_path": "F:/ApiTestImage/test_image_png.png"  //ÓÃ»§ÉÏ´«µÄÍ¼ÏñÎÄ¼þµØÖ·£¬ÔÊÐí¸ñÊ½£º `jpeg`¡¢`png`¡¢`bmp`¡¢`jpg` 
+        "image_path": "F:/ApiTestImage/test_image_png.png"  //ç”¨æˆ·ä¸Šä¼ çš„å›¾åƒæ–‡ä»¶åœ°å€ï¼Œå…è®¸æ ¼å¼ï¼š `jpeg`ã€`png`ã€`bmp`ã€`jpg` 
     }
 
   
- ÏìÓ¦Ê¾Àý:
+ å“åº”ç¤ºä¾‹:
   ```json
     {
         "status": "success",
@@ -98,29 +98,29 @@
     }
   ```
 
- ´íÎó×´Ì¬Âë:
-    `400`	´íÎóÇëÇó£ºÇëÇó²ÎÊýÓÐÎó»òÈ±Ê§
-    `415`	²»Ö§³ÖµÄÃ½ÌåÀàÐÍ£ºÉÏ´«µÄÍ¼Ïñ¸ñÊ½²»Ö§³Ö
-    `500`	·þÎñÆ÷´íÎó£º·þÎñÆ÷´¦ÀíÇëÇóÊ±³öÏÖÄÚ²¿´íÎó
+ é”™è¯¯çŠ¶æ€ç :
+    `400`	é”™è¯¯è¯·æ±‚ï¼šè¯·æ±‚å‚æ•°æœ‰è¯¯æˆ–ç¼ºå¤±
+    `415`	ä¸æ”¯æŒçš„åª’ä½“ç±»åž‹ï¼šä¸Šä¼ çš„å›¾åƒæ ¼å¼ä¸æ”¯æŒ
+    `500`	æœåŠ¡å™¨é”™è¯¯ï¼šæœåŠ¡å™¨å¤„ç†è¯·æ±‚æ—¶å‡ºçŽ°å†…éƒ¨é”™è¯¯
 
-3. Polling ×´Ì¬
+3. Polling çŠ¶æ€
 
  URL: `/status`
 
- ·½·¨: `GET`
+ æ–¹æ³•: `GET`
 
- ÃèÊö: **»ñÈ¡ÏµÍ³³õÊ¼»¯×´Ì¬**
+ æè¿°: **èŽ·å–ç³»ç»Ÿåˆå§‹åŒ–çŠ¶æ€**
 
- ÇëÇóÊ¾Àý:
+ è¯·æ±‚ç¤ºä¾‹:
     GET /status
 
- ÏìÓ¦Ê¾Àý:
+ å“åº”ç¤ºä¾‹:
   ```json
     {
         "initialized": true
     }
   ```
 
- ´íÎó×´Ì¬Âë:
-    `404`	ÕÒ²»µ½×ÊÔ´£ºÇëÇóµÄ×ÊÔ´²»´æÔÚ
-    `500`	·þÎñÆ÷´íÎó£º·þÎñÆ÷´¦ÀíÇëÇóÊ±³öÏÖÄÚ²¿´íÎó
+ é”™è¯¯çŠ¶æ€ç :
+    `404`	æ‰¾ä¸åˆ°èµ„æºï¼šè¯·æ±‚çš„èµ„æºä¸å­˜åœ¨
+    `500`	æœåŠ¡å™¨é”™è¯¯ï¼šæœåŠ¡å™¨å¤„ç†è¯·æ±‚æ—¶å‡ºçŽ°å†…éƒ¨é”™è¯¯

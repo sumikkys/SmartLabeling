@@ -59,7 +59,7 @@ class OperationManager:
                 elif request.type == 2:  # box
                     for pos in request.position:
                         self.current_state["boxes"].remove(pos)
-            self.future.append(('undo', operation, request))
+            self.future.append(('undo',request))
 
             masks = generate_mask('undo', request, self.current_state, img_embeddings, img_file)
 
@@ -80,7 +80,7 @@ class OperationManager:
 
             masks = generate_mask('redo', request, self.current_state, img_embeddings, img_file)
 
-            self.history.append(('redo', operation, request))
+            self.history.append(('redo', request))
             return "Redo operation completed", masks
         return "No operation to redo", None
 
@@ -129,9 +129,9 @@ class OperationManager:
         """Get the current state"""
         return self.current_state
 
-
+manager = OperationManager()
 def process_prompt(request: PromptRequest, img_embeddings, img_file) -> PromptResponse:
-    manager = OperationManager()
+    global manager
 
     if request.operation == 0:  # add
         result, receive_masks = manager.add(request, img_embeddings, img_file)
@@ -152,6 +152,7 @@ def process_prompt(request: PromptRequest, img_embeddings, img_file) -> PromptRe
         return PromptResponse(status="error", message="Invalid operation", data=None)
 
     current_state = manager.get_current_state()
+    receive_masks = receive_masks if receive_masks is not None else []
     return PromptResponse(
         status="success",
         message=result,
