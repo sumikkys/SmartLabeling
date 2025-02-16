@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from initialize_model import encoder, decoder
-from routers import prompt, upload_image, polling
+from routers import prompt, upload_image, polling, export, newProject
 import argparse
 
 # 一个点
@@ -22,6 +22,8 @@ print(f"Decoder initialized: {decoder is not None}")
 app.include_router(prompt.router, tags=["Prompt"])
 app.include_router(upload_image.router, tags=["Upload Image"]) 
 app.include_router(polling.router, tags=["Polling"])
+app.include_router(export.router, tags=["Export"])
+app.include_router(newProject.router, tags=["New Project"])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='params')

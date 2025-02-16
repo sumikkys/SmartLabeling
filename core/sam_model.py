@@ -327,12 +327,12 @@ class SamDecoder:
                 boxes=boxes,
             )
 
-        plt.figure(figsize=(10, 10))
-        plt.imshow(img_file)
-        show_mask(masks, plt.gca())
-        show_points(point_coords, point_labels, plt.gca())
-        show_box(boxes, plt.gca())
-        plt.axis('off')
-        plt.show()
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(img_file)
+        # show_mask(masks, plt.gca())
+        # show_points(point_coords, point_labels, plt.gca())
+        # show_box(boxes, plt.gca())
+        # plt.axis('off')
+        # plt.show()
         return masks, logits
 

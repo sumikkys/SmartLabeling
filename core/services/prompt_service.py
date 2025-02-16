@@ -19,7 +19,10 @@ class OperationManager:
         elif request.type == 1:  # background
             self.current_state["background"].extend(request.position)
         elif request.type == 2:  # box
-            self.current_state["boxes"].append(request.position)
+            if not self.current_state["boxes"]:
+                self.current_state["boxes"].append(request.position)
+            else:
+                self.current_state["boxes"][0] = request.position
 
         masks = generate_mask('add', request, self.current_state, img_embeddings, img_file)
 
@@ -64,7 +67,7 @@ class OperationManager:
                 elif request.type == 2:  # box
                     self.current_state["boxes"].append(request.position)
 
-            if not self.history:  # 倒数第二次undo
+            if not self.history:
                 return "back to original", None
 
             try:
@@ -104,7 +107,7 @@ class OperationManager:
                     if pos in self.current_state["boxes"]:
                         self.current_state["boxes"].remove(pos)
             masks = generate_mask('redo', request, self.current_state, img_embeddings, img_file)
-            if not self.future:#倒数第二次redo
+            if not self.future:
                 return "come to latest", None
                 #return "come to latest", masks
 
@@ -152,7 +155,7 @@ class OperationManager:
         else:
             return "Invalid type", None
         
-        if (not self.current_state["foreground"]) or (not self.current_state["background"]) or (not self.current_state["boxes"]):  # 倒数第二次delete
+        if (not self.current_state["foreground"]) or (not self.current_state["background"]) or (not self.current_state["boxes"]):
             return "back to original", None
 
         masks = generate_mask('remove', request, self.current_state, img_embeddings, img_file)
