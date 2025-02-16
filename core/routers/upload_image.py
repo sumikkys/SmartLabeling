@@ -11,7 +11,7 @@ async def upload_image(image: ImageRequest):
     """Rreceive an image from the client and save it to the server."""
     try:
         # Image save directory
-        save_dir = "upload_images"
+        save_dir = "core/upload_images"
         file_location = save_image_from_path(image.image_path, save_dir)
 
         response_data = ImageResponse(
