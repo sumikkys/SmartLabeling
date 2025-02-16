@@ -193,6 +193,7 @@ const handleError = (err: EnhancedError) => {
         send_box.value.end_x = (box.value.end_x - pos_x) / zoom_x
         send_box.value.end_y = (box.value.end_y - pos_y) / zoom_y
         Boxes.setBox(box.value.start_x, box.value.start_y, box.value.end_x, box.value.end_y)
+        sendBoxData()
       }
     })
 
@@ -202,7 +203,6 @@ const handleError = (err: EnhancedError) => {
           return
         }
         drawBox(e)
-        sendBoxData()
         if (!Boxes.isBoxed.value) {
             Boxes.isBoxed.value = true
         }
@@ -221,7 +221,7 @@ const sendPointData = async() => {
         }
       ) 
       //在这里处理数据
-      console.log('Prompt 操作结果:', response.data)
+      console.log('sendPoint 操作结果:', response.data)
     }  catch (err: unknown) {
   // 类型安全的错误转换
   if (err instanceof Error) {
@@ -241,7 +241,7 @@ const sendBoxData = async() => {
         }
       ) 
       //在这里处理数据
-      console.log('Prompt 操作结果:', response.data)
+      console.log('sendBox 操作结果:', response.data)
       
     }  catch (err: unknown) {
   // 类型安全的错误转换
@@ -271,6 +271,120 @@ const sendImageData = async () => {
   }
 }      
 };
+const sendundoDot = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 1,
+      "type": 0,
+      "position": [[120,120]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('undoDot 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}
+}
+const sendredoDot = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 3,
+      "type": 0,
+      "position": [[120,120]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('redoDot 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}
+}
+const sendremoveAllDots = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 2,
+      "type": 0,
+      "position": [[120,120]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('removeAllDots 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}
+}
+const sendundoBox = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 1,
+      "type": 2,
+      "position": [[120,120]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('undoBox 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}
+}
+const sendredoBox = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 3,
+      "type": 2,
+      "position": [[120,120]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('redoBox 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+  }
+}
+}
+const sendremoveBox = async() => {
+    try {
+      const response = await api.post('/api/prompt',{
+      "operation": 2,
+      "type": 2,
+      "position": [[120,120]]
+        }
+      ) 
+      //在这里处理数据
+      console.log('removeBox 操作结果:', response.data)
+    }  catch (err: unknown) {
+  // 类型安全的错误转换
+  if (err instanceof Error) {
+    handleError(err)
+  } else {
+    handleError(String(err))
+}
+}
+}
 
   // 画点
   function drawPoint(e: MouseEvent) {
@@ -407,24 +521,30 @@ const sendImageData = async () => {
   watch(Dots.operation, (newVal) => {
     if (newVal === 1) {
       undoDot()
+      sendundoDot()
     }
     else if (newVal === 3) {
       redoDot()
+      sendredoDot()
     }
     else if (newVal === 4) {
       removeAllDots()
+      sendremoveAllDots()
     }
   })
 
   watch(Boxes.operation, (newVal) => {
     if (newVal === 1) {
       undoBox()
+      sendundoBox()
     }
     else if (newVal === 3) {
       redoBox()
+      sendredoBox()
     }
     else if (newVal === 4) {
       removeBox()
+      sendremoveBox()
     }
   })
 
