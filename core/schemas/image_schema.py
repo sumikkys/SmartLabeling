@@ -1,6 +1,5 @@
 # image_schema.py
 from pydantic import BaseModel
-from pathlib import Path
 
 class ImageResponseData(BaseModel):
     image_path: str 

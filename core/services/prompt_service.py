@@ -67,7 +67,7 @@ class OperationManager:
                 elif request.type == 2:  # box
                     self.current_state["boxes"].append(request.position)
 
-            if not self.history:  # 鍊掓暟绗�浜屾��undo
+            if not self.history:
                 return "back to original", None
 
             try:
