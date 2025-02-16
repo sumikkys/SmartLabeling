@@ -1,12 +1,8 @@
 # project_service.py
-import os
 import yaml
 from pathlib import Path
 from typing import Optional
 from schemas.project_schema import ProjectRequest
-
-# 项目根路径
-PROJECTS_DIR = Path("./projects")
 
 def create_project_dir(request:ProjectRequest) -> Optional[str]:
     """创建项目目录及相关文件"""

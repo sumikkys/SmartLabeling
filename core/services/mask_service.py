@@ -19,15 +19,6 @@ def generate_mask(operation, request, current_state, img_embeddings, img_file):
             masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["foreground"]+current_state["background"], point_labels=current_lables)
         #001
         else:
-            # if request.type == 0:  # foreground
-            #     if current_state["foreground"] is None:
-            #         raise ValueError("Foreground is None")
-            #     masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["foreground"], point_labels=[1])
-            # elif request.type == 1:  # background
-            #     if current_state["background"] is None:
-            #         raise ValueError("Background is None")
-            #     masks, _ = decoder.point(img_embeddings, img_file, point_coords=current_state["background"], point_labels=[0])
-            # elif request.type == 2:  # box
             if not current_state["boxes"]:
                 raise ValueError("Boxes is not None")
             masks, _ = decoder.bBox(img_embeddings, img_file, boxes=current_state["boxes"])

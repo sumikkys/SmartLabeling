@@ -5,6 +5,7 @@ from services.prompt_service import process_prompt
 from initialize_model import encoder
 import cv2
 import logging
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -20,7 +21,8 @@ async def prompt(request: PromptRequest):
             logger.error("Encoder is not initialized")
             raise ValueError("Encoder is not initialized")
         
-        image_path = "core/images/test_image.png"
+        image_path = Path(request.storage_path) / request.project_name / "images" / request.image_name
+        #image_path = "core/images/test_image.png"
         logger.info("Reading image from path: %s", image_path)
         img_file = cv2.imread(image_path)
         
