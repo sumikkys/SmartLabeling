@@ -1,6 +1,6 @@
 # export_schema.py
 from pydantic import BaseModel
-from typing import List
+from typing import List , Optional
 
 class ExportResponseData(BaseModel):
     masks_path: str
@@ -17,5 +17,7 @@ class Annotation(BaseModel):
 
 class ExportRequest(BaseModel):
     annotations: List[Annotation]
+    project_name: str
+    project_path: Optional[str] = "F:/SmartLabeling/projects"  # 默认路径
     image_width: int
     image_height: int
