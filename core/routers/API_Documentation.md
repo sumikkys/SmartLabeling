@@ -252,3 +252,335 @@
 
     `404`	找不到资源：请求的资源不存在
     `500`	服务器错误：服务器处理请求时出现内部错误
+
+
+
+## ***6. Switch Image***
+
+**URL:** `/annotation-tools/switch_image`
+
+**Method:** `POST`
+
+**Description:** **该接口用于切换当前工作中的图片，切换后图片的标注类别和遮罩将被加载。**
+
+### Request Format: `json`
+```json
+{
+    "image_name": ""  // 图片的唯一标识符
+}
+```
+
+### Request Example:
+```json
+{
+    "image_name": "test_image_png.png"
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Switched to image: test_image_png.png"
+}
+```
+
+### Error Status Codes:
+
+- `400`: No image selected or image not found
+- `500`: Internal Server Error
+
+
+---
+
+## ***7. Add Mask***
+
+**URL:** `/annotation-tools/api/add_mask`
+
+**Method:** `POST`
+
+**Description:** **该接口用于为当前选择的图片添加一个标注 Mask。**
+
+### Request Format: `json`
+```json
+{
+    "class_id": 1,  // Mask的类别ID
+    "masks": [[0,0], [10,10], [10,0], [0,10]]  // Mask的坐标（多边形的顶点坐标）
+}
+```
+
+### Request Example:
+```json
+{
+    "class_id": 1,
+    "masks": [[0,0], [10,10], [10,0], [0,10]]
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Mask added successfully",
+    "mask": {
+        "mask_id": "1",
+        "class_id": 1,
+        "masks": [[0,0], [10,10], [10,0], [0,10]]
+    }
+}
+```
+
+### Error Status Codes:
+
+- `400`: No image selected
+- `500`: Internal Server Error
+
+
+---
+
+## ***8. Delete Mask***
+
+**URL:** `/annotation-tools/api/delete_mask/{mask_id}`
+
+**Method:** `DELETE`
+
+**Description:** **该接口用于删除指定的标注 Mask。**
+
+### Request Format: `url`
+- `mask_id`: 要删除的标注 Mask 的 ID。
+
+### Request Example:
+```json
+{
+    "mask_id": "1"
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Mask deleted successfully"
+}
+```
+
+### Error Status Codes:
+
+- `404`: Mask not found
+- `500`: Internal Server Error
+
+
+---
+
+## ***9. Update Mask Class***
+
+**URL:** `/annotation-tools/api/update_mask_class/{mask_id}`
+
+**Method:** `PUT`
+
+**Description:** **该接口用于更改已标注 Mask 的类别。**
+
+### Request Format: `json`
+```json
+{
+    "new_class_id": 2  // 新类别ID
+}
+```
+
+### Request Example:
+```json
+{
+    "new_class_id": 2
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Mask class updated",
+    "mask": {
+        "mask_id": "1",
+        "class_id": 2,
+        "masks": [[0,0], [10,10], [10,0], [0,10]]
+    }
+}
+```
+
+### Error Status Codes:
+
+- `404`: Mask not found
+- `500`: Internal Server Error
+
+
+---
+
+## ***10. Get Classes***
+
+**URL:** `/annotation-tools/api/classes`
+
+**Method:** `GET`
+
+**Description:** **该接口用于获取当前图片的所有类别。**
+
+### Request Format: `json`
+```json
+{
+    // 无需请求体，默认使用当前选中的图片
+}
+```
+
+### Request Example:
+```json
+// 无请求体
+```
+
+### Response Example:
+```json
+{
+    "classes": [
+        {
+            "class_id": 0,
+            "class_name": "_background_"
+        },
+        {
+            "class_id": 1,
+            "class_name": "class1"
+        }
+    ]
+}
+```
+
+### Error Status Codes:
+
+- `400`: No image selected or no classes defined
+- `500`: Internal Server Error
+
+
+---
+
+## ***11. Add Class***
+
+**URL:** `/annotation-tools/api/add_class`
+
+**Method:** `POST`
+
+**Description:** **该接口用于为当前项目添加新的类别。**
+
+### Request Format: `json`
+```json
+{
+    "class_name": "new_class"  // 新类别的名称
+}
+```
+
+### Request Example:
+```json
+{
+    "class_name": "new_class"
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Class added successfully",
+    "classes": [
+        {
+            "class_id": 0,
+            "class_name": "_background_"
+        },
+        {
+            "class_id": 1,
+            "class_name": "class1"
+        },
+        {
+            "class_id": 2,
+            "class_name": "new_class"
+        }
+    ]
+}
+```
+
+### Error Status Codes:
+
+- `400`: No image selected
+- `500`: Internal Server Error
+
+
+---
+
+## ***12. Delete Class***
+
+**URL:** `/annotation-tools/api/delete_class/{class_id}`
+
+**Method:** `DELETE`
+
+**Description:** **该接口用于删除类别。删除类别时，若该类别有标注的 Mask，会阻止删除并返回警告信息。**
+
+### Request Format: `json`
+- `class_id`: 要删除的类别ID。
+
+### Request Example:
+```json
+{
+    "class_id": 2
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Class deleted successfully",
+    "classes": [
+        {
+            "class_id": 0,
+            "class_name": "_background_"
+        },
+        {
+            "class_id": 1,
+            "class_name": "class1"
+        }
+    ]
+}
+```
+
+### Error Status Codes:
+
+- `400`: Cannot delete class, there are masks using it.
+- `500`: Internal Server Error
+
+
+---
+
+## ***13. Add Image***
+
+**URL:** `/annotation-tools/api/add_image`
+
+**Method:** `POST`
+
+**Description:** **该接口用于为当前项目添加一张图片。**
+
+### Request Format: `json`
+```json
+{
+    "image_id": "image2",  // 新图片的ID
+    "image_path": "/path/to/image"  // 新图片的路径
+}
+```
+
+### Request Example:
+```json
+{
+    "image_id": "image2",
+    "image_path": "/path/to/image"
+}
+```
+
+### Response Example:
+```json
+{
+    "message": "Image added successfully"
+}
+```
+
+### Error Status Codes:
+
+- `400`: Invalid image path
+- `500`: Internal Server Error

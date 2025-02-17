@@ -12,21 +12,41 @@ class OperationManager:
             "boxes": []
         }  # record current state
 
+    def reset(self):
+        """Reset operation"""
+        self.history.clear()
+        self.future.clear()
+        self.current_state = {
+            "foreground": [],
+            "background": [],
+            "boxes": []
+        }
+        return "All operations cleared", None
     def add(self, request, img_embeddings, img_file):
         """Add operation"""
         if request.type == 0:  # foreground
             self.current_state["foreground"].extend(request.position)
+            logits = self.history[-1][2] if self.history else None
         elif request.type == 1:  # background
             self.current_state["background"].extend(request.position)
+            logits = self.history[-1][2] if self.history else None
         elif request.type == 2:  # box
-            if not self.current_state["boxes"]:
-                self.current_state["boxes"].append(request.position)
-            else:
-                self.current_state["boxes"][0] = request.position
+            # if not self.current_state["boxes"]:
+            #     self.current_state["boxes"].append(request.position)
+            # else:
+            self.history.clear()
+            self.future.clear()
+            self.current_state = {
+                "foreground": [],
+                "background": [],
+                "boxes": []
+            }
+            self.current_state["boxes"].append(request.position)
+            logits = None
 
-        masks = generate_mask('add', request, self.current_state, img_embeddings, img_file)
+        masks, logits= generate_mask('add', request, self.current_state, img_embeddings, img_file, logits)
 
-        self.history.append(('add', request))
+        self.history.append(['add', request, logits])
         self.future.clear()
         return "Added successfully", masks
 
@@ -39,11 +59,11 @@ class OperationManager:
 
         if self.history:
             try:
-                operation, request = self.history.pop()
+                operation, request, logits = self.history.pop()
             except IndexError:
                 return "No operation to undo", None
 
-            self.future.append((operation, request))
+            self.future.append([operation, request, logits])
 
             if operation == 'add':
                 if request.type == 0:  # foreground
@@ -70,8 +90,11 @@ class OperationManager:
             if not self.history:
                 return "back to original", None
 
+            logits = self.history[-2][2] if len(self.history)>=2 else None
+
             try:
-                masks = generate_mask('undo', request, self.current_state, img_embeddings, img_file)
+                masks, logits = generate_mask('undo', request, self.current_state, img_embeddings, img_file, logits)
+                self.history[-1][2] = logits
             except Exception as e:
                 return f"Error generating mask: {str(e)}", None
 
@@ -83,8 +106,8 @@ class OperationManager:
     def redo(self, img_embeddings, img_file):
         """Redo operation"""
         if self.future:
-            operation, request = self.future.pop()
-            self.history.append((operation, request))
+            operation, request, logits = self.future.pop()
+            self.history.append([operation, request, logits])
             if operation == 'add':
                 if request.type == 0:  # foreground
                     self.current_state["foreground"].extend(request.position)
@@ -106,7 +129,9 @@ class OperationManager:
                     pos = request.position
                     if pos in self.current_state["boxes"]:
                         self.current_state["boxes"].remove(pos)
-            masks = generate_mask('redo', request, self.current_state, img_embeddings, img_file)
+            logits = self.history[-2][2] if self.history else None
+            masks, logits= generate_mask('redo', request, self.current_state, img_embeddings, img_file, logits)
+            self.history[-1][2] = logits
             if not self.future:
                 return "come to latest", None
                 #return "come to latest", masks
@@ -115,24 +140,14 @@ class OperationManager:
             return "Redo operation completed", None
         return "No operation to redo", None
 
-    def reset(self):
-        """Reset operation"""
-        self.history.clear()
-        self.future.clear()
-        self.current_state = {
-            "foreground": [],
-            "background": [],
-            "boxes": []
-        }
-        return "All operations cleared", None
-
+    ###当前版本弃用###
     def remove(self, request, img_embeddings, img_file):
         """Remove operation"""
         if request.type == 0:  # foreground
             for pos in request.position:
                 if pos in self.current_state["foreground"]:
                     self.current_state["foreground"].remove(pos)
-                    self.history.append(('remove', request))
+                    self.history.append(['remove', request, None])
                     self.future.clear() 
                 else:
                     return "Foreground point not found", None
@@ -140,7 +155,7 @@ class OperationManager:
             for pos in request.position:
                 if pos in self.current_state["background"]:
                     self.current_state["background"].remove(pos)
-                    self.history.append(('remove', request))
+                    self.history.append(['remove', request, None])
                     self.future.clear()
                 else:
                     return "Background point not found", None
@@ -148,7 +163,7 @@ class OperationManager:
             pos = request.position
             if pos in self.current_state["boxes"]:
                 self.current_state["boxes"].remove(pos)
-                self.history.append(('remove', request))
+                self.history.append(['remove', request, None])
                 self.future.clear() 
             else:
                 return "Box not found", None
@@ -158,7 +173,7 @@ class OperationManager:
         if (not self.current_state["foreground"]) or (not self.current_state["background"]) or (not self.current_state["boxes"]):
             return "back to original", None
 
-        masks = generate_mask('remove', request, self.current_state, img_embeddings, img_file)
+        masks, _ = generate_mask('remove', request, self.current_state, img_embeddings, img_file)
 
         return "Operation completed", None
         #return "Operation completed", masks
