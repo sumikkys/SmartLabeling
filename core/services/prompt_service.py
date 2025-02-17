@@ -45,7 +45,6 @@ class OperationManager:
             logits = None
 
         masks, logits= generate_mask('add', request, self.current_state, img_embeddings, img_file, logits)
-
         self.history.append(['add', request, logits])
         self.future.clear()
         return "Added successfully", masks
@@ -129,7 +128,7 @@ class OperationManager:
                     pos = request.position
                     if pos in self.current_state["boxes"]:
                         self.current_state["boxes"].remove(pos)
-            logits = self.history[-2][2] if self.history else None
+            logits = self.history[-2][2] if self.history>=2 else None
             masks, logits= generate_mask('redo', request, self.current_state, img_embeddings, img_file, logits)
             self.history[-1][2] = logits
             if not self.future:

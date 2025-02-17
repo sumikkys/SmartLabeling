@@ -16,5 +16,5 @@ class PromptRequest(BaseModel):
 class PromptResponse(BaseModel):
     status: str
     message: str
-    masks: List[List[float]] 
+    masks: List[List[int]] 
     data: Optional[dict]
