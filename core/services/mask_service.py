@@ -12,7 +12,7 @@ def generate_mask(operation, request, current_state, img_embeddings, img_file, l
         #101 111 011
         if (current_state["foreground"] or current_state["background"]) and current_state["boxes"]:
             current_lables = [1] * len(current_state["foreground"]) + [0] * len(current_state["background"])
-            masks, logits = decoder.hybrid(img_embeddings, img_file, point_coords=current_state["foreground"]+current_state["background"], point_labels=current_lables, boxes=current_state["boxes"])#, logits=logits
+            masks, logits = decoder.hybrid(img_embeddings, img_file, point_coords=current_state["foreground"]+current_state["background"], point_labels=current_lables, boxes=current_state["boxes"], logits=logits)
         #100 110 010    
         elif (current_state["foreground"] or current_state["background"]) and not current_state["boxes"]:
             current_lables = [1] * len(current_state["foreground"]) + [0] * len(current_state["background"])

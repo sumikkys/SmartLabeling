@@ -9,6 +9,7 @@ class ImageResponseData(BaseModel):
 class ImageResponse(BaseModel):
     status: str
     message: str
+    image_data: dict #测试版本保留
     data: ImageResponseData
     
 class ImageRequest(BaseModel):
