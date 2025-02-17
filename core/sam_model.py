@@ -301,7 +301,7 @@ class SamDecoder:
         # plt.axis('off')
         # plt.show()
 
-        return masks, logits
+        return masks , logits
 
     def hybrid(self, image_embeddings, img_file, point_coords, point_labels, boxes, logits=None):
         origin_image_size = img_file.shape[:2]
