@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from schemas.prompt_schema import PromptRequest, PromptResponse
 from services.prompt_service import process_prompt
-from cache.image_embeddings_cache import *
+from cache.image_cache import *
 from initialize_model import encoder
 import cv2
 import logging

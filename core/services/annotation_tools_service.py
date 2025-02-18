@@ -1,7 +1,7 @@
 # annotation_tools_service.py
 from typing import List, Optional
 from schemas.annotation_tools_schema import *
-from cache.image_embeddings_cache import *
+from cache.image_cache import *
 import os
 
 class AnnotationService:
@@ -34,13 +34,6 @@ class AnnotationService:
         
         del self.images_data[self.current_image_id]['classes'][class_id]
         return "Class deleted successfully"
-
-    def switch_image(self, image_id: str) -> str:
-        """切换图片"""
-        self.current_image_id = image_id
-        image_path = find_key_by_value(image_id_cache, image_id)
-        image_name = os.path.basename(image_path)
-        return f"Switched to image: {image_name}"
 
     def add_mask(self, mask_data: MaskData) -> MaskResponse:
         """添加一个新的标注 Mask"""
