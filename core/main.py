@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from initialize_model import encoder, decoder
-from routers import prompt, upload_image, polling, export, newProject, annotation_tools
+from routers import prompt, upload_image, polling, export, newProject, annotation_tools, switch_image
 import argparse
 
 # 一个点
@@ -24,6 +24,7 @@ app.include_router(upload_image.router, tags=["Upload Image"])
 app.include_router(polling.router, tags=["Polling"])
 app.include_router(export.router, tags=["Export"])
 app.include_router(newProject.router, tags=["New Project"])
+app.include_router(switch_image.router, tags=["Switch Image"])
 app.include_router(annotation_tools.router, prefix="/annotation-tools", tags=["Annotations Tools"])
 
 if __name__ == "__main__":

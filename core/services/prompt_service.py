@@ -47,6 +47,7 @@ class OperationManager:
         masks, logits= generate_mask('add', request, self.current_state, img_embeddings, img_file, logits)
         self.history.append(['add', request, logits])
         self.future.clear()
+        return "Added successfully", None #测试版本保留
         return "Added successfully", masks
 
     def undo(self, img_embeddings, img_file):
@@ -98,7 +99,7 @@ class OperationManager:
                 return f"Error generating mask: {str(e)}", None
 
             # return "Undo operation completed", masks
-            return "Undo operation completed", None
+            return "Undo operation completed", None #测试版本保留
 
         return "No operation to undo", None
 
@@ -128,7 +129,7 @@ class OperationManager:
                     pos = request.position
                     if pos in self.current_state["boxes"]:
                         self.current_state["boxes"].remove(pos)
-            logits = self.history[-2][2] if self.history>=2 else None
+            logits = self.history[-2][2] if len(self.history)>=2 else None
             masks, logits= generate_mask('redo', request, self.current_state, img_embeddings, img_file, logits)
             self.history[-1][2] = logits
             if not self.future:
@@ -136,7 +137,7 @@ class OperationManager:
                 #return "come to latest", masks
 
             #return "Redo operation completed", masks
-            return "Redo operation completed", None
+            return "Redo operation completed", None #测试版本保留
         return "No operation to redo", None
 
     ###当前版本弃用###
@@ -174,7 +175,7 @@ class OperationManager:
 
         masks, _ = generate_mask('remove', request, self.current_state, img_embeddings, img_file)
 
-        return "Operation completed", None
+        return "Operation completed", None #测试版本保留
         #return "Operation completed", masks
 
     def get_current_state(self):

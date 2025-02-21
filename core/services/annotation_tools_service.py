@@ -1,12 +1,11 @@
 # annotation_tools_service.py
 from typing import List, Optional
 from schemas.annotation_tools_schema import *
-
+from cache.image_cache import *
+import os
 
 class AnnotationService:
     def __init__(self):
-        # 存储每个 image_name 对应的 classes 和 masks
-        self.images_data = {}
         self.current_image_id = None  # 当前图片的 ID
 
     def get_classes(self) -> List[ClassResponse]:
@@ -36,24 +35,13 @@ class AnnotationService:
         del self.images_data[self.current_image_id]['classes'][class_id]
         return "Class deleted successfully"
 
-    def switch_image(self, image_name: str) -> str:
-        """切换图片"""
-        self.current_image_id = image_name
-        if image_name not in self.images_data:
-            # 初始化新图片的数据
-            self.images_data[image_name] = {
-                "classes": {0: "_background_"},  # 默认只有背景类
-                "masks": {}
-            }
-        return f"Switched to image: {image_name}"
-
     def add_mask(self, mask_data: MaskData) -> MaskResponse:
         """添加一个新的标注 Mask"""
         if self.current_image_id is None:
             return None
         mask_id = str(len(self.images_data[self.current_image_id]['masks']) + 1)
         self.images_data[self.current_image_id]['masks'][mask_id] = mask_data
-        return MaskResponse(mask_id=mask_id, class_id=mask_data.class_id, coordinates=mask_data.coordinates)
+        return MaskResponse(mask_id=mask_id, class_id=mask_data.class_id, masks=mask_data.masks)
 
     def delete_mask(self, mask_id: str) -> None:
         """删除标注的 Mask"""
@@ -68,5 +56,5 @@ class AnnotationService:
             return None
         if mask_id in self.images_data[self.current_image_id]['masks']:
             self.images_data[self.current_image_id]['masks'][mask_id].class_id = new_class_id
-            return MaskResponse(mask_id=mask_id, class_id=new_class_id, coordinates=self.images_data[self.current_image_id]['masks'][mask_id].coordinates)
+            return MaskResponse(mask_id=mask_id, class_id=new_class_id, masks=self.images_data[self.current_image_id]['masks'][mask_id].masks)
         return None

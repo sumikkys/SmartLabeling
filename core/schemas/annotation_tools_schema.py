@@ -15,14 +15,12 @@ class UpdateMaskClassRequest(BaseModel):
 
 class AddClassRequest(BaseModel):
     class_name: str
+    project_name: str
+    project_path: Optional[str] = "F:/SmartLabeling/projects"  # 默认路径
 
 
 class DeleteClassRequest(BaseModel):
     class_id: int
-
-
-class ImageRequest(BaseModel):
-    image_name: str
     project_name: str
     project_path: Optional[str] = "F:/SmartLabeling/projects"  # 默认路径
 

@@ -2,6 +2,7 @@
 import os
 from fastapi import HTTPException
 from PIL import Image
+from cache.image_cache import *
 
 # allowed file extensions
 ALLOWED_EXTENSIONS = {'jpeg', 'jpg', 'png', 'bmp'}
@@ -32,3 +33,18 @@ def save_image_from_path(image_path: str, save_dir: str) -> str:
         return target_path
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error saving the image: {str(e)}")
+
+def switch_image(image_id: str) -> str:
+    """切换图片"""
+    global current_image_id
+    try:
+        current_image_id = image_id
+        image_path = find_key_by_value(image_id_cache, image_id)
+        if image_path is None:
+            raise ValueError(f"Image ID {image_id} not found in cache. Current cache: {image_id_cache}")
+        image_name = os.path.basename(image_path)
+        return image_name
+    except ValueError as ve:
+        raise HTTPException(status_code=404, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Server error: {str(e)}")

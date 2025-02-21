@@ -1,18 +1,12 @@
 # annotation_tools.py
 from fastapi import APIRouter, HTTPException
-from schemas.annotation_tools_schema import MaskData, UpdateMaskClassRequest, AddClassRequest, DeleteClassRequest, ImageRequest
+from schemas.annotation_tools_schema import MaskData, UpdateMaskClassRequest, AddClassRequest, DeleteClassRequest
 from services.annotation_tools_service import AnnotationService, ClassResponse, MaskResponse
+from cache.image_cache import *
+from pathlib import Path
 
 router = APIRouter()
 annotation_service = AnnotationService()
-
-
-@router.post("/switch_image")
-async def switch_image(image_request: ImageRequest):
-    """切换图片"""
-    result = annotation_service.switch_image(image_request.image_id)
-    return {"message": result}
-
 
 @router.post("/add_mask")
 async def add_mask(mask_data: MaskData):
