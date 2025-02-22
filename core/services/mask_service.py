@@ -6,7 +6,7 @@ def generate_mask(operation, request, current_state, img_embeddings, img_file, l
     if decoder is None:
         raise ValueError("Decoder is not initialized")
     masks = None
-    #masks_2d = List[List[float]]
+    #masks_2d = List[List[int]]
     masks_2d = [[]]
     if operation in ['add', 'undo', 'redo', 'remove']:  # These operations need to generate masks
         #101 111 011

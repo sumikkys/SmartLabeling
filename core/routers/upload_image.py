@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from services.image_service import save_image_from_path
 from schemas.image_schema import ImageResponse, ImageResponseData, ImageUploadRequest
-from cache.image_cache import image_id_cache, image_data_cache, image_embeddings_cache, current_image_id
+from cache.image_cache import *
 from initialize_model import encoder
 from pathlib import Path
 import os
@@ -36,28 +36,27 @@ async def upload_image(image: ImageUploadRequest):
             image_id_cache[saved_image_path_str] = len(image_id_cache)
         image_id = image_id_cache[saved_image_path_str]
         
-        global current_image_id
-        current_image_id = image_id
+        set_current_id(image_id)
+        current_image_id = get_current_id()
         
         img_file = cv2.imread(saved_image_path_str)
         height, width, _ = img_file.shape
-        image_data_cache[image_id] = {
-            "classes": {0: "_background_"},
-            "masks": [[]],
+        image_data_cache[current_image_id] = {
+            "masks": {},
             "width": width,
             "height": height
         }
 
-        if image_id in image_embeddings_cache:
-            img_embeddings = image_embeddings_cache[image_id]
+        if current_image_id in image_embeddings_cache:
+            img_embeddings = image_embeddings_cache[current_image_id]
         else:
             img_embeddings = encoder(img_file)  # 无记录则调用encoder生成img_embeddings
-            image_embeddings_cache[image_id] = img_embeddings
+            image_embeddings_cache[current_image_id] = img_embeddings
         
         response_data = ImageResponse(
             status="success",
             message="Image uploaded successfully",
-            image_data=image_data_cache[image_id],  # 测试版本保留
+            image_data=image_data_cache[current_image_id],  # 测试版本保留
             data=ImageResponseData(image_path=saved_image_path_str, image_name=image_name)
         )
 

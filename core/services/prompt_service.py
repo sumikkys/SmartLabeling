@@ -47,7 +47,7 @@ class OperationManager:
         masks, logits= generate_mask('add', request, self.current_state, img_embeddings, img_file, logits)
         self.history.append(['add', request, logits])
         self.future.clear()
-        return "Added successfully", None #测试版本保留
+        #return "Added successfully", None #测试版本保留
         return "Added successfully", masks
 
     def undo(self, img_embeddings, img_file):
