@@ -31,6 +31,12 @@ image_data_cache = {} # image_id -> image_data (classes, masks, width, height)
 #     }
 #     2: {}
 # }
+image_class_cache = {} # class_id -> class_name
+# image_class_cache = {
+#     0: "_background_",
+#     1: "class1",
+#     2: "class2"
+# }
 image_embeddings_cache = {} # image_id -> img_embeddings
 current_image_id = 0
 def get_current_id():

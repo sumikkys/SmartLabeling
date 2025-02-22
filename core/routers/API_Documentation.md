@@ -200,7 +200,7 @@
  请求格式: `json`
   ```json
     {
-        "image_id": [], // 用户需要导出的图片id列表，***留空则导出所有图片***
+        "image_id": [], // 用户需要导出的图片id列表
         "project_name": "", //用户的项目名称
         "project_path": "" //用户选择的项目地址，留空则为默认存储路径："F:/SmartLabeling/projects"
     }

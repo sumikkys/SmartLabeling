@@ -10,11 +10,7 @@ class ExportResponse(BaseModel):
     status: str
     message: str
     data: ExportResponseData
-
-class Annotation(BaseModel):
-    class_id: int
-    masks: List[List[int]] 
-
+    
 class ExportRequest(BaseModel):
     image_id: List[int]
     project_name: str
