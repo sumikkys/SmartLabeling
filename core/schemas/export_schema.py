@@ -13,11 +13,9 @@ class ExportResponse(BaseModel):
 
 class Annotation(BaseModel):
     class_id: int
-    masks: List[List[float]] 
+    masks: List[List[int]] 
 
 class ExportRequest(BaseModel):
-    annotations: List[Annotation]
+    image_id: List[int]
     project_name: str
     project_path: Optional[str] = "F:/SmartLabeling/projects"  # 默认路径
-    image_width: int
-    image_height: int

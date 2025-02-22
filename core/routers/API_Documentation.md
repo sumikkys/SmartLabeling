@@ -1,6 +1,6 @@
  # API 接口说明文档
 
- # 更新时间：2025.2.16
+ # 更新时间：2025.2.19
  # 关于项目结构：
 - storage_path/project_name/
   - images/
@@ -13,7 +13,7 @@
 
   API涉及storage_path时留空则默认为 "F:/SmartLabeling/projects"，用户可自行修改
 
-# ***1. Prompt***
+# ***1. Mask Prompt***
 
  URL: `/prompt`
 
@@ -44,7 +44,7 @@
                             */
 
         "project_name": "",
-        "storage_path": "", //改行留空为默认存储路径："F:/SmartLabeling/projects"
+        "storage_path": "", //该行留空为默认存储路径："F:/SmartLabeling/projects"
         "image_name": ""
     }
   ```
@@ -181,7 +181,7 @@
   ```json
     {
         "message": "Project created successfully",
-        "project_path": "D:\\test2"
+        "project_path": "D:\\test2" //若同名项目存在则返回"Project test1 already exists."
     }
   ```
    错误状态码:
@@ -200,40 +200,18 @@
  请求格式: `json`
   ```json
     {
-        "annotations": [
-            {
-                "class_id": 255, //类别id，等同灰度值
-                "masks":[[]] //***即API 1生成的masks ***
-            },
-            {
-                "class_id": 150,
-                "masks":[[]]
-            }//多个标注数据，此处为id： 150和id： 255的标注数据
-        ],
+        "image_id": [], // 用户需要导出的图片id列表，***留空则导出所有图片***
         "project_name": "", //用户的项目名称
-        "project_path": "", //用户选择的项目地址，留空则为默认存储路径："F:/SmartLabeling/projects"
-        "image_width": 350, //所处理图像的宽
-        "image_height": 350 //所处理图像的高
+        "project_path": "" //用户选择的项目地址，留空则为默认存储路径："F:/SmartLabeling/projects"
     }
   ```
 
  请求示例:
   ```json
     {
-        "annotations": [
-            {
-                "class_id": 255,
-                "masks":[[]] //此处省略
-            },
-            {
-                "class_id": 150,
-                "masks":[[]]
-            }
-        ],
+        "image_id": [1],
         "project_name": "test1",
-        "project_path": "D:/",
-        "image_width": 350,
-        "image_height": 350
+        "project_path": "D:/"
     }
   ```
   
@@ -243,7 +221,7 @@
         "status": "success",
         "message": "Export successful",
         "data": {
-            "masks_path": "D:\\test1\\masks\\test1_exported_image.png",
+            "masks_path": "D:\\test1\\masks",
             "yaml_path": "D:\\test1\\test1.yaml"
         }
     }
@@ -257,23 +235,27 @@
 
 ## ***6. Switch Image***
 
-**URL:** `/annotation-tools/switch_image`
+**URL:** `/switch_image`
 
 **Method:** `POST`
 
-**Description:** **该接口用于切换当前工作中的图片，切换后图片的标注类别和遮罩将被加载。**
+**Description:** **该接口用于切换当前工作中的图片，切换后新图片的遮罩将被加载。**
 
 ### Request Format: `json`
 ```json
 {
-    "image_name": ""  // 图片的唯一标识符
+    "image_id": 1,  // int 图片的唯一标识符
+    "project_name": "", //用户的项目名称
+    "project_path": "" //用户选择的项目地址，留空则为默认存储路径："F:/SmartLabeling/projects"
 }
 ```
 
 ### Request Example:
 ```json
 {
-    "image_name": "test_image_png.png"
+    "image_id": 1,
+    "project_name": "test1",
+    "project_path": "D:/"
 }
 ```
 
@@ -292,295 +274,150 @@
 
 ---
 
-## ***7. Add Mask***
 
-**URL:** `/annotation-tools/api/add_mask`
+# ***7. Annotation Prompt***
 
-**Method:** `POST`
+**URL**: `/annotation-tools/prompt`  
+**方法**: `POST`  
+**描述**: **处理来自前端的标注请求，支持添加、删除、更新标注 Mask，获取当前类别及添加、删除类别操作**  
 
-**Description:** **该接口用于为当前选择的图片添加一个标注 Mask。**
-
-### Request Format: `json`
+### 请求格式: `json`  
 ```json
 {
-    "class_id": 1,  // Mask的类别ID
-    "masks": [[0,0], [10,10], [10,0], [0,10]]  // Mask的坐标（多边形的顶点坐标）
+    "operation": 0,      /* int 必要
+                          0:单个Mask添加标注
+                          1:删除单个已标注Mask
+                          2:更新类别
+                          3:获取类别
+                          4:添加类别
+                          5:删除类别(会导致该类别下已标注的masks也一并删除)
+                          */
+  
+    "mask_data": {        /* object 可选(仅在operation为0时使用)
+                          {
+                            "class_id": int,
+                            "masks": [[x1, y1], [x2, y2], ...]
+                          }
+                          */
+    },
+    
+    "mask_id": "string",  /* string 可选(仅在operation为1时使用)
+                          标识需要操作的Mask的ID
+                          */
+    
+    "class_id_change": 0, /* int 可选(仅在operation为2和5时使用)
+                          用于更新或删除类别时，指定新的类别ID
+                          */
+    
+    "class_name": "string" /* string 可选(仅在operation为2和4时使用)
+                            类别名称，用于更新或添加类别
+                            */
 }
 ```
+### 关于mask_id(str):
+**mask_id为字符串，表示一个唯一的标注ID，用于标识一个标注。**
+`mask_id = "class_id"+ "_" + "mask_id2"`
 
-### Request Example:
+`mask_id = "2_9"` // 类别ID为2，标注ID为9
+
+### 请求示例:
+1. **添加标注 Mask** (`operation: 0`):
 ```json
 {
-    "class_id": 1,
-    "masks": [[0,0], [10,10], [10,0], [0,10]]
-}
-```
-
-### Response Example:
-```json
-{
-    "message": "Mask added successfully",
-    "mask": {
-        "mask_id": "1",
+    "operation": 0,
+    "mask_data": {
         "class_id": 1,
-        "masks": [[0,0], [10,10], [10,0], [0,10]]
+        "masks": [[120, 120], [130, 130]]
     }
 }
 ```
 
-### Error Status Codes:
-
-- `400`: No image selected
-- `500`: Internal Server Error
-
-
----
-
-## ***8. Delete Mask***
-
-**URL:** `/annotation-tools/api/delete_mask/{mask_id}`
-
-**Method:** `DELETE`
-
-**Description:** **该接口用于删除指定的标注 Mask。**
-
-### Request Format: `url`
-- `mask_id`: 要删除的标注 Mask 的 ID。
-
-### Request Example:
+2. **删除标注 Mask** (`operation: 1`):
 ```json
 {
-    "mask_id": "1"
+    "operation": 1,
+    "mask_id": "1_0"
 }
 ```
 
-### Response Example:
+3. **更新类别** (`operation: 2`):
 ```json
 {
-    "message": "Mask deleted successfully"
+    "operation": 2,
+    "class_id_change": 2,
+    "class_name": "tree" //表示对于id为2的class新的name是tree
 }
 ```
 
-### Error Status Codes:
-
-- `404`: Mask not found
-- `500`: Internal Server Error
-
-
----
-
-## ***9. Update Mask Class***
-
-**URL:** `/annotation-tools/api/update_mask_class/{mask_id}`
-
-**Method:** `PUT`
-
-**Description:** **该接口用于更改已标注 Mask 的类别。**
-
-### Request Format: `json`
+4. **获取类别** (`operation: 3`):
 ```json
 {
-    "new_class_id": 2  // 新类别ID
+    "operation": 3
 }
 ```
 
-### Request Example:
+5. **添加类别** (`operation: 4`):
 ```json
 {
-    "new_class_id": 2
+    "operation": 4,
+    "class_name": "NewClass"
 }
 ```
 
-### Response Example:
+6. **删除类别** (`operation: 5`):
 ```json
 {
-    "message": "Mask class updated",
-    "mask": {
-        "mask_id": "1",
-        "class_id": 2,
-        "masks": [[0,0], [10,10], [10,0], [0,10]]
-    }
+    "operation": 5,
+    "class_id_change": 3
 }
 ```
 
-### Error Status Codes:
-
-- `404`: Mask not found
-- `500`: Internal Server Error
-
-
----
-
-## ***10. Get Classes***
-
-**URL:** `/annotation-tools/api/classes`
-
-**Method:** `GET`
-
-**Description:** **该接口用于获取当前图片的所有类别。**
-
-### Request Format: `json`
+### 响应格式:
 ```json
 {
-    // 无需请求体，默认使用当前选中的图片
-}
-```
-
-### Request Example:
-```json
-// 无请求体
-```
-
-### Response Example:
-```json
-{
-    "classes": [
-        {
-            "class_id": 0,
-            "class_name": "_background_"
-        },
+    "status": "success",   /* 操作状态：success | error */
+    "message": "操作的反馈消息",  /* 反馈的具体消息 */
+    "mask_id": "string",   /* 如果操作涉及Mask，返回新增/删除的Mask的ID */
+    "class_id": 0,         /* 如果操作涉及类别，返回操作后类别的ID */
+    "masks": [[x1, y1], [x2, y2], ...], /* 操作后的标注坐标数据 */
+    "classes": [           /* 操作为3、4时返回所有类别的信息 */
         {
             "class_id": 1,
-            "class_name": "class1"
-        }
-    ]
-}
-```
-
-### Error Status Codes:
-
-- `400`: No image selected or no classes defined
-- `500`: Internal Server Error
-
-
----
-
-## ***11. Add Class***
-
-**URL:** `/annotation-tools/api/add_class`
-
-**Method:** `POST`
-
-**Description:** **该接口用于为当前项目添加新的类别。**
-
-### Request Format: `json`
-```json
-{
-    "class_name": "new_class"  // 新类别的名称
-}
-```
-
-### Request Example:
-```json
-{
-    "class_name": "new_class"
-}
-```
-
-### Response Example:
-```json
-{
-    "message": "Class added successfully",
-    "classes": [
-        {
-            "class_id": 0,
-            "class_name": "_background_"
-        },
-        {
-            "class_id": 1,
-            "class_name": "class1"
+            "class_name": "Foreground"
         },
         {
             "class_id": 2,
-            "class_name": "new_class"
+            "class_name": "Background"
         }
-    ]
+    ],
+    "data": null           /* 附加数据，如果没有返回null */
 }
 ```
 
-### Error Status Codes:
+### 错误状态码:
+- **400**: 错误请求：请求参数有误或缺失。
+- **404**: 找不到资源：指定的资源或标注不存在。
+- **500**: 服务器错误：处理请求时出现内部错误。
 
-- `400`: No image selected
-- `500`: Internal Server Error
 
+### 操作说明:
+
+- **operation: 0 (单个Mask添加标注)**  
+  - 请求中必须包含 `mask_data`，包括 `class_id` 和 `masks`（标注坐标数据）。成功后返回新增的 `mask_id` 
+
+- **operation: 1 (删除单个已标注Mask)**  
+  - 需要提供 `mask_id`，指定要删除的标注 Mask。成功时返回删除操作的结果。
+
+- **operation: 2 (更新类别)**  
+  - 需要提供 `class_name` 和 `class_id_change`，用于更新指定class类别名称。如果更新成功，返回更新后的类别 ID 和 类别名称。
+
+- **operation: 3 (获取类别)**  
+  - 获取与当前图像相关的所有类别信息，返回类别列表。
+
+- **operation: 4 (添加类别)**  
+  - 提供 `class_name`，添加新类别。返回操作结果消息。
+
+- **operation: 5 (删除类别)**  
+  - 提供 `class_id_change`，删除指定类别。返回操作结果消息。
 
 ---
-
-## ***12. Delete Class***
-
-**URL:** `/annotation-tools/api/delete_class/{class_id}`
-
-**Method:** `DELETE`
-
-**Description:** **该接口用于删除类别。删除类别时，若该类别有标注的 Mask，会阻止删除并返回警告信息。**
-
-### Request Format: `json`
-- `class_id`: 要删除的类别ID。
-
-### Request Example:
-```json
-{
-    "class_id": 2
-}
-```
-
-### Response Example:
-```json
-{
-    "message": "Class deleted successfully",
-    "classes": [
-        {
-            "class_id": 0,
-            "class_name": "_background_"
-        },
-        {
-            "class_id": 1,
-            "class_name": "class1"
-        }
-    ]
-}
-```
-
-### Error Status Codes:
-
-- `400`: Cannot delete class, there are masks using it.
-- `500`: Internal Server Error
-
-
----
-
-## ***13. Add Image***
-
-**URL:** `/annotation-tools/api/add_image`
-
-**Method:** `POST`
-
-**Description:** **该接口用于为当前项目添加一张图片。**
-
-### Request Format: `json`
-```json
-{
-    "image_id": "image2",  // 新图片的ID
-    "image_path": "/path/to/image"  // 新图片的路径
-}
-```
-
-### Request Example:
-```json
-{
-    "image_id": "image2",
-    "image_path": "/path/to/image"
-}
-```
-
-### Response Example:
-```json
-{
-    "message": "Image added successfully"
-}
-```
-
-### Error Status Codes:
-
-- `400`: Invalid image path
-- `500`: Internal Server Error

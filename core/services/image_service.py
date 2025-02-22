@@ -36,9 +36,8 @@ def save_image_from_path(image_path: str, save_dir: str) -> str:
 
 def switch_image(image_id: str) -> str:
     """切换图片"""
-    global current_image_id
     try:
-        current_image_id = image_id
+        set_current_id(image_id)
         image_path = find_key_by_value(image_id_cache, image_id)
         if image_path is None:
             raise ValueError(f"Image ID {image_id} not found in cache. Current cache: {image_id_cache}")
