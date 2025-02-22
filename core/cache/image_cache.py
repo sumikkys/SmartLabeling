@@ -10,11 +10,6 @@ image_id_cache = {} # image_path -> image_id
 image_data_cache = {} # image_id -> image_data (classes, masks, width, height)
 # image_data_cache = {
 #     1: {
-#         "classes": {  
-#                     0: "_background_",
-#                     1: "class1",
-#                     2: "class2"
-#                 }, 
 #         "masks": {
 #                 0:{
 #                     "0_0": [[]],

@@ -3,6 +3,7 @@ import yaml
 from pathlib import Path
 from typing import Optional
 from schemas.project_schema import ProjectRequest
+from cache.image_cache import image_class_cache
 
 def create_project_dir(request:ProjectRequest) -> Optional[str]:
     """创建项目目录及相关文件"""
@@ -24,6 +25,8 @@ def create_project_dir(request:ProjectRequest) -> Optional[str]:
         # 创建 YAML 文件
         project_yaml = project_path / f"{project_name}.yaml"
         create_project_yaml(project_yaml)
+        global image_class_cache
+        image_class_cache = {0: "_background_"}
 
         return str(project_path)
 

@@ -42,7 +42,6 @@ async def upload_image(image: ImageUploadRequest):
         img_file = cv2.imread(saved_image_path_str)
         height, width, _ = img_file.shape
         image_data_cache[current_image_id] = {
-            "classes": {0: "_background_"},
             "masks": {},
             "width": width,
             "height": height
