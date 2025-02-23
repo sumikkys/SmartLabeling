@@ -56,7 +56,7 @@ export class Boxes {
         this.isBoxed_redo.value = false
     }
 
-    static removeBox() {
+    static resetBox() {
         this.box = {
             start_x: 0,
             start_y: 0,

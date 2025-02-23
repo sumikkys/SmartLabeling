@@ -1,5 +1,6 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
+
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
   on(...args: Parameters<typeof ipcRenderer.on>) {
@@ -21,4 +22,9 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 
   // You can expose other APTs you need here.
   // ...
+})
+
+contextBridge.exposeInMainWorld('electron', {
+  openFileDialog: () => ipcRenderer.invoke('dialog:openFile'), // 调用主进程的文件选择对话框
+  createDirectory: () => ipcRenderer.invoke('createDirectory'),
 })

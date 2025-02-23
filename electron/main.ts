@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
@@ -38,6 +38,8 @@ function createWindow() {
     icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
+      allowRunningInsecureContent: true, // 允许不安全的内容加载
+      webSecurity: false // 禁用web安全策略
     },
   })
 
@@ -115,4 +117,43 @@ app.on('before-quit', () => {
 })
 
 
-app.whenReady().then(createWindow).then(createPythonProcess)
+// app.whenReady().then(createWindow).then(createPythonProcess)
+
+app.whenReady().then(() => {
+  createWindow()
+  createPythonProcess()
+
+  // 监听渲染进程的文件选择请求
+  ipcMain.handle('dialog:openFile', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections'],  // 选择文件并允许多选
+      filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },]
+    })
+
+    if (result.filePaths && result.filePaths[0]) {
+      return result.filePaths[0]  // 返回第一个文件的绝对路径
+    }
+    return null
+  })
+
+  ipcMain.handle('createDirectory', async () => {
+    try {
+        // 弹出文件夹选择对话框，让用户选择文件夹的保存路径
+        const result = await dialog.showOpenDialog({
+            properties: ['openDirectory', 'createDirectory'] // 允许创建新文件夹
+        });
+  
+        if (!result.canceled) {
+            const folderPath = result.filePaths[0]
+            // 检查文件夹是否存在，如果不存在就创建
+            if (!fs.existsSync(folderPath)) {
+                fs.mkdirSync(folderPath, { recursive: true });
+            }
+            return folderPath // 返回文件夹路径
+        }
+    } catch (error) {
+        console.error('创建文件夹失败:', error)
+        throw error
+    }
+  })
+})

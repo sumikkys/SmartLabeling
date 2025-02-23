@@ -4,15 +4,15 @@ import { ref } from 'vue'
 export const isDotMasked = ref(true)
 
 export class Dots {
-    static isDotted = ref(false)
-    static isDotted_redo = ref(false)
-    static dots = []
-    static dots_redo = []
-    static operation = ref(0)   /* 0:add 1:undo 撤销 2:reset 清空当前操作 3:redo 反撤销 4:remove */
+    static isDotted = ref(false);
+    static isDotted_redo = ref(false);
+    static dots = [];
+    static dots_redo = [];
+    static operation = ref(0);  /* 0:add 1:undo 撤销 2:reset 清空当前操作 3:redo 反撤销 4:remove */
 
     // 测试用可删
     static getDots() {
-        console.log('\n')
+        console.log('\n');
         this.dots.forEach(element => {
             console.log(element.x, element.y, element.dot_type, 'dot');
         });
@@ -27,6 +27,10 @@ export class Dots {
             y: y,
             dot_type: dot_type
         })
+    }
+
+    static addDotMatrix(tempInt2DArr) {
+        this.dots_matrix.push(tempInt2DArr)
     }
 
     static undoDot() {
@@ -55,7 +59,7 @@ export class Dots {
         return last_dot_redo;
     }
 
-    static removeDots() {
+    static resetDots() {
         for ( ;this.dots.length > 0; ) {
             this.dots.pop();
         }
@@ -64,6 +68,7 @@ export class Dots {
         }
         this.isDotted.value = false;
         this.isDotted_redo.value = false;
+        isDotMasked.value = true;
     }
 
     static posIsDotted(x, y) { 

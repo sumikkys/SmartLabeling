@@ -2,7 +2,7 @@
   <div class="grid-container">
     <div class="item1"><MyHeader></MyHeader></div>
     <div class="item2"><MyTools></MyTools></div>
-    <div class="item3"><MyContent></MyContent></div>  
+    <div class="item3"><MyContent></MyContent></div>
     <div class="item4"></div>
   </div>
 </template>
