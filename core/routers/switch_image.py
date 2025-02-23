@@ -26,7 +26,7 @@ async def switchImage(image_request: ProjectImageRequest):
         response_data = ImageResponse(
             status="success",
             message="Image switch successfully",
-            image_data=image_data_cache[image_id],  # 测试版本保留
+            # image_data=image_data_cache[image_id],  # 测试版本保留
             data=ImageResponseData(image_path=image_path_str, image_name=result)
         )
         return response_data
