@@ -133,8 +133,8 @@ class OperationManager:
             masks, logits= generate_mask('redo', request, self.current_state, img_embeddings, img_file, logits)
             self.history[-1][2] = logits
             if not self.future:
-                return "come to latest", None
-                #return "come to latest", masks
+                # return "come to latest", None
+                return "come to latest", masks
 
             return "Redo operation completed", masks
             # return "Redo operation completed", None #测试版本保留
