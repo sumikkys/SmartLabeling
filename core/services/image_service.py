@@ -40,9 +40,18 @@ def switch_image(image_id: str) -> str:
         set_current_id(image_id)
         image_path = find_key_by_value(image_id_cache, image_id)
         if image_path is None:
-            raise ValueError(f"Image ID {image_id} not found in cache. Current cache: {image_id_cache}")
+            raise ValueError(f"Image ID {image_id} not found in cache.")
         image_name = os.path.basename(image_path)
-        return image_name
+        image_data = {}
+        if image_id not in image_data_cache:
+            raise ValueError(f"Image ID {image_id} not found in image_data_cache.")
+        if "masks" not in image_data_cache[image_id]:
+            raise ValueError(f"Image ID {image_id} does not have 'masks' in cache.")
+        for class_id in image_data_cache[image_id]["masks"].keys():
+            image_data[class_id] = []
+            for mask_id in image_data_cache[image_id]["masks"][class_id].keys():
+                image_data[class_id].append(mask_id)
+        return image_name, image_data
     except ValueError as ve:
         raise HTTPException(status_code=404, detail=str(ve))
     except Exception as e:

@@ -9,8 +9,6 @@
   import axios from 'axios'
   import type { AxiosError } from 'axios'
 
-  let url = ref('')
-
   let pos = ref({
     x: 0,
     y: 0
@@ -110,7 +108,7 @@
   }
 
   onMounted(() => {
-    draw_Image(url.value) // 初始绘制图片
+    draw_Image(imgURL.value) // 初始绘制图片
     checkBackendReady();
   })
 
@@ -555,24 +553,31 @@
     }
   })
 
-  watch(imgURL,(newVal)=> {
+  watch(imgPath,(newVal)=> {
       if (newVal != null) {
-        url.value = newVal
-        sendImageData()
+        sendResetData()
         Dots.resetDots()
-        isDotMasked.value = true
         Boxes.resetBox()
-        draw_Image(url.value);  // 重新加载并绘制新图片
+        sendImageData()
+        imgURL.value = `file://${newVal}`
+        isDotMasked.value = true
+        draw_Image(imgURL.value);  // 重新加载并绘制新图片
       }
   })
 
+  watch(imgURL, async(newVal) => {
+    Dots.resetDots()
+    Boxes.resetBox()
+    sendResetData()
+    draw_Image(newVal)
+  })
 </script>
 
 <template>
   <div style="display: flex; flex-direction: row;">
     <div class="content">
       <canvas ref="myCanvas" class="content-canvas"></canvas>
-      <img :src=url id="bg" alt="请上传图片" />
+      <img :src=imgURL id="bg" alt="请上传图片" />
     </div>
     <AnnotationSidebar></AnnotationSidebar>
   </div>

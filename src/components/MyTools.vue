@@ -5,7 +5,7 @@
     import { selection } from '../js/selection'
     import { Dots, isDotMasked } from '../js/Dots'
     import { Boxes } from '../js/Boxes'
-    import { imgPath, imgURL, projectPath, projectName } from '../js/file'
+    import { imgPath, projectPath, projectName, Paths } from '../js/file'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
@@ -106,8 +106,7 @@
             if (path) {
                 filePath.value = path  // 获取到文件的绝对路径
                 imgPath.value = path
-                console.log(imgPath)
-                imgURL.value = `file://${path}`
+                Paths.addPath(path)
             } else {
                 filePath.value = '未选择文件'
             }

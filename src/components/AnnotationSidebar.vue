@@ -1,21 +1,23 @@
 <script setup lang="ts">
-    import { ref,computed }  from 'vue'
+    import { ref, computed, watch, nextTick }  from 'vue'
     import axios, { AxiosError } from 'axios'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
     import MyRightImage from './icons/MyRightImageIcon.vue'
     import MyDownIcon from './icons/MyDownIcon.vue'
     import MyClassIcon from './icons/MyClassIcon.vue'
-    import MyAddIcon from './icons/MyAddIcon.vue'
     import MyUpIcon from './icons/MyUpIcon.vue'
-    import { imgPath, imgURL, projectPath, projectName } from '../js/file'
+    import { imgPath, projectPath, projectName, imgURL, Paths } from '../js/file'
+    import { tempMaskMatrix } from '../js/Masks'
 
-    let CurrentImageName = ref('test.png') 
+    let CurrentImageName = ref('')
     let showSearchBar = ref(false)
+    let showAddOneClass = ref(false)
     let showAllClass = ref(false)
     let showSelect = ref(false)
     let CurrentClass = ref('')
     let searchQuery = ref('')
     let searchQueryImage = ref('')
+    let AddOneClassName = ref('')
 
     const api = axios.create({
         headers: {
@@ -78,63 +80,117 @@
 
 
     // 定义数据列表
-    const ImageList = ref([
-        'test.png',
-        'test1.png',
-        'test2.png',
-        'test3.png',
-        'test4.png',
-        'test5.png',
-        'test6.png',
-        'test7.png',
-        'test8.png'
-    ])
-    const MasksList = ref([
-        '数据项 1',
-        '数据项 2',
-        '数据项 3',
-        '数据项 4',
-        '数据项 5',
-        '数据项 6',
-        '数据项 7',
-        '数据项 8',
-        '数据项 9',
-        '数据项 10'
-    ])
-    const AllClass = ref([
-        '数据项 0',
-        '数据项 1',
-        '数据项 2',
-        '数据项 3',
-        '数据项 4',
-        '数据项 5',
-        '数据项 6',
-        '数据项 7',
-        '数据项 8',
-        '数据项 9',
-        '数据项 10' 
-    ])
-    const CurrentAllClass = ref([
-        '数据项 0',
-        '数据项 1',
-        '数据项 2',
-        '数据项 3',
-        '数据项 4',
-        '数据项 5',
-        '数据项 6',
-        '数据项 10' 
-    ])
+    const ImageList = ref<Array<string>>([])
+    const MasksList = ref<Array<string>>([])
+    const AllClass = ref<Array<string>>([])
+    const CurrentAllClass = ref<Array<string>>([])
     CurrentClass.value = AllClass.value[0]
 
     //网络部分
     const sendSwitchImage = async (id:number) => {
         try {
+            imgURL.value = Paths.findPath(id)
             const response = await api.post('/api/switch_image', {
-                "image_id": id,
+                "image_name": imgURL.value.split('\\').pop().split('/').pop(),
                 "project_name": projectName.value,
                 "project_path": projectPath.value 
             })
-            //这里切换图片的地址，执行后续逻辑
+            console.log(response.data)
+            for (; CurrentAllClass.value.length > 0;) {
+                CurrentAllClass.value.pop()
+            }
+            for (; MasksList.value.length > 0;) {
+                MasksList.value.pop()
+            }
+            const tempClassList : Array<string> = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
+            const tempMaskNameList : Array<string> = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
+            tempClassList.forEach(tempClass => {
+                CurrentAllClass.value.push(tempClass)
+            })
+            tempMaskNameList.forEach(tempMaskName => {
+                MasksList.value.push(tempMaskName)
+            })
+        } catch (err: unknown) {
+            // 类型安全的错误转换
+            if (err instanceof Error) {
+                handleError(err)
+            } else {
+                handleError(String(err))
+            }
+        }
+    }
+
+    // 增加mask
+    const sendAddMaskAnnotation = async () => {
+        try {
+            const response = await api.post('/api/annotation-tools/prompt', {
+                "operation": 0,
+                "mask_data": {
+                    "class_id": AllClass.value.indexOf(CurrentClass.value),
+                    "masks": tempMaskMatrix.value
+                }
+            })
+            console.log(response.data)
+            const maskName = CurrentClass.value+"_"+ImageList.value.length
+            Paths.addMaskstoPath(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
+            MasksList.value.push(maskName)
+        } catch (err: unknown) {
+            // 类型安全的错误转换
+            if (err instanceof Error) {
+                handleError(err)
+            } else {
+                handleError(String(err))
+            }
+        }
+    }
+
+    // 删除mask
+    const sendRemoveMaskAnnotation = async (index : number) => {
+        try {
+            const response = await api.post('/api/annotation-tools/prompt', {
+                "operation": 1,
+                "mask_id": Paths.getMaskIdfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
+            })
+            console.log(response.data)
+            Paths.removeMaskfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
+            MasksList.value.splice(index, 1)
+        } catch (err: unknown) {
+            // 类型安全的错误转换
+            if (err instanceof Error) {
+                handleError(err)
+            } else {
+                handleError(String(err))
+            }
+        }
+    }
+
+    // 获取类别
+    const sendGetCategoryAnnotation = async () => {
+        try {
+            const response = await api.post('/api/annotation-tools/prompt', {
+                "operation": 3
+            })
+            console.log(response.data)
+            AllClass.value.push(AddOneClassName.value);
+        } catch (err: unknown) {
+            // 类型安全的错误转换
+            if (err instanceof Error) {
+                handleError(err)
+            } else {
+                handleError(String(err))
+            }
+        }
+    }
+
+    // 增加类别
+    const sendAddCategoryAnnotation = async (class_name : string) => {
+        try {
+            const response = await api.post('/api/annotation-tools/prompt', {
+                "operation": 4,
+                "class_name": class_name
+            })
+            console.log(response.data)
+            sendGetCategoryAnnotation()
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -149,10 +205,10 @@
         try {
             const response = await api.post('/api/export', {
                 "image_id": [ImageList.value.indexOf(CurrentImageName.value)],
-                "project_name": "",
-                "project_path": ""
+                "project_name": projectName.value,
+                "project_path": projectPath.value
             })
-            //这里导出当前图片，执行后续逻辑
+            console.log(response.data)
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -166,11 +222,11 @@
     const ExoprtAllImage = async () => {
         try {
             const response = await api.post('/api/export', {
-                "image_id": [],
-                "project_name": "",
-                "project_path": ""
+                "image_id": Paths.getAllPathsfromPaths(),
+                "project_name": projectName.value,
+                "project_path": projectPath.value
             })
-            //这里导出所有图片，执行后续逻辑
+            console.log(response.data)
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -221,14 +277,23 @@
         showSearchBar.value = !showSearchBar.value;
     }
 
+    const AddOneClass =()=>{
+        showAddOneClass.value = !showAddOneClass.value;
+    }
+
+    const handleConfirm = () => {
+        showAddOneClass.value = !showAddOneClass.value;
+        if(!AllClass.value.includes(AddOneClassName.value)){
+            sendAddCategoryAnnotation(AddOneClassName.value)
+        }
+    };
+
     const AddClassToMask =()=> {
         if(!CurrentAllClass.value.includes(CurrentClass.value)){
-            CurrentAllClass.value.push(CurrentClass.value);
+            CurrentAllClass.value.push(CurrentClass.value)
+            Paths.addClasstoPath(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
         }
-        if(!AllClass.value.includes(CurrentClass.value)){
-            AllClass.value.push(CurrentClass.value);
-        }
-        MasksList.value.push('Mask' + MasksList.value.length + CurrentClass.value)
+        sendAddMaskAnnotation()
     }
 
     // 这里是搜索栏功能实现
@@ -243,7 +308,14 @@
             return item.toLowerCase().includes((searchQueryImage.value.toLowerCase()));
         })
     });
-    </script>
+
+    watch(imgPath, async (newVal) => {
+        const imgName = newVal.split('\\').pop().split('/').pop()
+        CurrentImageName.value = imgName
+        ImageList.value.push(imgName)
+        await nextTick()
+    })
+</script>
 
 <template>
     <ul class = 'MyAnothertools'>
@@ -255,12 +327,14 @@
         </div>
       </li>
       <li class="Box">
-        <div><span class="currentImage">{{ CurrentImageName }}</span>
+        <div>
+            <span class="currentImage">{{ CurrentImageName }}</span>
+            <span v-if="!CurrentImageName" class="noneImage">none</span>
             <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button></div>
             <div v-if="showSearchBar">
                 <div class="select-menu-Image">
                     <div>
-                    <input class="search-Bar" v-model = "searchQueryImage" type="text" placeholder="搜索你想要标注的Image" />
+                    <input class="search-Bar" v-model = "searchQueryImage" type="text" placeholder="搜索Image"/>
                 </div>
                 <button class ="select-element" v-for="(item, index1) in ImageFilter" :key="index1" @click="selectionImage(item)">
                     <span class="ClassElement">{{ item }}</span>
@@ -273,14 +347,21 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div class="data-item" v-for="(item, index) in MasksList" :key="index">{{ item }}</div>
+            <div class="data-item" v-for="(item, index) in MasksList" :key="index">{{ item }}
+                <button @click="sendRemoveMaskAnnotation(index)" class="MyClass">-</button>
+            </div>
         </div>
       </li>
       <li class="Classli">
-        <div v-if="!showAllClass" class="CurrentClassText">当前图片Classes</div><div v-else class="CurrentClassText">数据集Class</div>
-        <div><button @click="showClass" class="MyClass"><MyClassIcon></MyClassIcon></button></div>
-        <!-- <div v-if="showAddOneClass" class="InputOneClass"><input v-model="AddOneClassName" class="InputContent" type="text"placeholder="添加你想要用来标注的类">
-        <button @click="FinishAdd"><MyAddIcon></MyAddIcon></button></div> -->
+        <div v-if="!showAllClass" class="CurrentClassText">当前图片Classes</div>
+        <div v-else class="CurrentClassText">数据集Class</div>
+        <div>
+            <button v-if="showAllClass" @click="AddOneClass" class="MyClass">+</button>
+            <button @click="showClass" class="MyClass"><MyClassIcon></MyClassIcon></button>
+        </div>
+        <div v-if="showAddOneClass" class="InputOneClass">
+            <input v-model="AddOneClassName" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="">
+        </div>
       </li>
       <li class="Box">
         <div class = "scroll-container">
@@ -300,7 +381,7 @@
             <div v-if="showSelect" >
                 <div class="select-menu">
                     <div>
-                        <input v-model = "searchQuery" class="select-Bar" type="text" placeholder="搜索你想要标注的Class" />
+                        <input v-model = "searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
                     </div>
                     <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionOption(item)">
                         <span class="ClassElement">{{ item }}</span>
@@ -308,13 +389,11 @@
                 </div>
             </div>
         </div>
-        <button class="AddClass" @click="AddClassToMask"><MyAddIcon></MyAddIcon></button>
+        <button class="AddClass" @click="AddClassToMask">+</button>
       </li>
       <li class="Exportli">
-        <div class="Exportlabeldata"><button class="Exportlabeldatabutton" @click="ExportCurrentImage"><span>导出当前图片</span></button></div>
-      </li>
-      <li class="Exportli">
-        <div class="Exportlabeldata"><button class="Exportlabeldatabutton" @click="ExoprtAllImage"><span>导出所有图片</span></button></div>
+        <button class="Exportlabeldatabutton" @click="ExportCurrentImage">导出当前图片</button>
+        <button class="Exportlabeldatabutton" @click="ExoprtAllImage">导出所有图片</button>
       </li>
     </ul>
 </template>
@@ -382,6 +461,11 @@
     .Box .currentImage{
         background-color: #FFFFFF;
         color: #000000;
+        font: bold 1.4rem Arial, sans-serif;
+    }
+    .Box .noneImage {
+        background-color: #FFFFFF;
+        color: #D3D3D3;
         font: bold 1.4rem Arial, sans-serif;
     }
     .Box .SearchButton {
@@ -452,7 +536,7 @@
         width: 100%;
     }      
     .Classli .CurrentClassText {
-        margin-right: 2rem;
+        margin: 0rem;
     }
     .Classli .MyAddIcon {
         height: 30%;
@@ -463,16 +547,20 @@
         cursor: pointer;
         background-color: #FFFFFF;
         color: #000000;
+        font: normal 2rem Arial, sans-serif;
         border: none;
+        text-align: top;
     }
     .Classli .InputOneClass {
         position: absolute;
         bottom: 100%;
+        left: 1vw;
     }
     .Classli .InputContent {
-        width: 23rem;
+        width: 12vw;
         height: 2rem;
-        border-radius: 1.5rem;
+        border-radius: 1rem;
+        border: 0.2rem solid #409eff;
     }
     .Tipli {
         display: flex;
@@ -557,32 +645,31 @@
         cursor: pointer;
         background-color: #409eff;
         color: #FFFFFF;
+        font: normal 2rem Arial, sans-serif;
         border: none;
         border-radius: 0.5rem;
+        width: 2.8rem;
         height: 2.8rem;
         margin: 1rem 0rem;
     }
     .Exportli {
         display: flex;
         align-self: flex-end;
+        justify-content: space-between;
         width: 100%;
         margin: 0.5rem;
     }
-    .Exportlabeldata {
-        background-color: #FFFFFF;
-        border: none;
-        width: 100%;
-        height: 100%;
-    }
-    .Exportlabeldata .Exportlabeldatabutton {
-        cursor: pointer;
-        color: #000000;
-        border: 0.05rem solid #D3D3D3;
-        height: 100%;
-        width: 100%;
-    }
-    .Exportlabeldata .Exportlabeldatabutton:active {
+    .Exportli .Exportlabeldatabutton {
         background-color: #409eff;
-        color: #000000;
+        border: none;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        color: #FFFFFF;
+        font: bold 1.4rem Arial, sans-serif;
+        height: 3rem;
+        width: 100%;
+    }
+    .Exportli .Exportlabeldatabutton:active {
+        color: #B0B0B0;
     }
 </style>
