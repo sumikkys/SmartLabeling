@@ -7,3 +7,4 @@ createApp(App).mount('#app').$nextTick(() => {
     console.log(message)
   })
 })
+

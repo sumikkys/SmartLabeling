@@ -1,17 +1,16 @@
 <script setup lang="ts">
     import { ref , watch } from 'vue'
+    // import { ipcRenderer } from 'electron'
+    import axios, { AxiosError } from 'axios'
     import { selection } from '../js/selection'
     import { Dots, isDotMasked } from '../js/Dots'
     import { Boxes } from '../js/Boxes'
-    import { path } from '../js/path'
+    import { imgPath, projectPath, projectName, Paths } from '../js/file'
+    import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
     import MyUpLoad from './icons/MyUpLoadIcon.vue'
     import MyGallary from './icons/MyGallaryIcon.vue'
-
-
-    let timer: number | null = null
-    let appear = ref(0)         // 0: none, 1: click, 2: box
 
     let AddClass = ref('selected-btn')
     let AddTextClass = ref('selected-btn-text')
@@ -21,68 +20,128 @@
     let UndoClass = ref('disabled')
     let RedoClass = ref('disabled')
 
-    const fileInput = ref<HTMLInputElement | null>(null);
+    const api = axios.create({
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
 
-    const selectFile = () => {
-        if (fileInput.value) {
-            fileInput.value.click();
+    const error = ref<string | null>(null)
+    // 定义增强型错误类型
+    type EnhancedError = 
+    | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
+    | Error                              // 标准错误对象
+    | string                             // 字符串类型的错误消息
+
+    // 统一错误处理函数
+    const handleError = (err: EnhancedError) => {
+    // 处理字符串类型错误
+        if (typeof err === 'string') {
+            error.value = err
+            console.error('API Error:', err)
+            return
+        }
+        // 处理Error对象
+        if (err instanceof Error) {
+        // 类型断言为AxiosError
+            const axiosError = err as AxiosError<{ message?: string }>
+            // 处理带响应的错误
+            if (axiosError.response) {
+                // 状态码映射
+                const statusMessage = (() => {
+                    switch (axiosError.response.status) {
+                    case 400: return '请求参数错误'
+                    case 404: return '资源不存在'
+                    case 415: return '不支持的媒体类型'
+                    case 500: return '服务器内部错误'
+                    default: return `请求失败 (${axiosError.response.status})`
+                    }
+                })()
+
+                error.value = axiosError.response.data?.message || statusMessage
+                    console.error('API Error:', {
+                        status: axiosError.response.status,
+                        message: axiosError.message,
+                        url: axiosError.config?.url,
+                        data: axiosError.response.data
+                })
+            } 
+            // 处理无响应的网络错误
+            else if (axiosError.request) {
+                error.value = '网络连接异常，请检查网络'
+                console.error('Network Error:', axiosError.message)
+            }
+            // 处理其他Error类型
+            else {
+                error.value = err.message
+                console.error('Runtime Error:', err)
+            }
+        }
+    }
+
+    // 创建新项目
+    const CreateNewProject = async () => {
+        try {
+            const response = await api.post('/api/create-project', {
+                "project_name": projectName.value,
+                "storage_path": projectPath.value
+            })
+            console.log(response.data)
+        } catch (err: unknown) {
+            // 类型安全的错误转换
+            if (err instanceof Error) {
+                handleError(err)
+            } else {
+                handleError(String(err))
+            }
+        }
+    }
+
+    // 打开文件选择对话框并获取文件的绝对路径
+    const filePath = ref<string | null>(null)
+    const openFileDialog = async () => {
+        try {
+            // 调用主进程的文件选择功能
+            const path = await window.electron.openFileDialog()
+            if (path) {
+                filePath.value = path  // 获取到文件的绝对路径
+                imgPath.value = path
+                Paths.addPath(path)
+            } else {
+                filePath.value = '未选择文件'
+            }
+        } catch (error) {
+            console.error('文件选择失败:', error)
+        }
+    }
+
+    // 打开输入文件名弹窗
+    const promptRef = ref<{ show: () => Promise<string | null> }>()
+    const showPrompt = async () => {
+        const result = await promptRef.value?.show()
+        if (result) {
+            console.log('用户输入:', result)
+            projectName.value = result
+            CreateNewProject()
+        } else {
+            console.log('用户取消输入')
         }
     };
 
-    const readFile = (event: Event) => {
-        const target = event.target as HTMLInputElement;
-        const file = target.files?.[0];
-        if (file && (file.type === 'image/jpeg' || file.type === 'image/jpg')) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (e.target?.result) { // 使用可选链
-                   path.value = e.target.result as string; // 获取文件的 URL
-                }
-        };
-        reader.readAsDataURL(file); // 读取为 Data URL
-      } else {
-        alert('请选择一个 JPG 文件！');
-      }
-    }
-
-    function ChangeOver(isOvered: boolean, value: string) {
-        if (!isOvered) {
-            if (value === 'click') {
-                appear.value = 1
+    // 其实是打开文件夹并选取
+    const createDirectory = async() => {
+        try {
+            // 调用主进程的选取文件夹功能
+            const folderPath = await window.electron.createDirectory()
+            if (folderPath) {
+                console.log("选择成功，文件保存路径为:", folderPath)
+                projectPath.value = folderPath // 存储文件夹路径
+                showPrompt()
+            } else {
+                console.log('未选择文件夹路径')
             }
-            else if (value === 'box') {
-                appear.value = 2
-            }
-        }
-        else {
-            appear.value = 0
-        }
-    }
-
-    function MouseOverBTN(value: string) {
-        if (timer != null) {
-            clearTimeout(timer)
-        }
-
-        timer = setTimeout(() => {
-            if (value === 'click' && selection.value != 1) {
-                ChangeOver(false,'click')
-            }
-            else if (value === 'box' && selection.value != 2) {
-                ChangeOver(false,'box')
-            }
-        },1000) as any
-    }
-
-    function MouseOutBTN(value: string) {
-        if (timer != null) {
-            clearTimeout(timer)
-        }
-        if (value === 'click' && selection.value != 1) {
-            ChangeOver(true,'click')
-        }
-        else if (value === 'box' && selection.value != 2) {
-            ChangeOver(true,'box')
+        } catch (error) {
+            console.error('保存路径选择失败:', error)
         }
     }
 
@@ -98,6 +157,24 @@
     function ChangeMaskBtn(value: string) {
         if (selection.value === 1) {
             if (Dots.isDotted.value) {
+                if (value === 'Add') {
+                    AddClass.value = 'selected-btn'
+                    AddTextClass.value = 'selected-btn-text'
+                    RemoveClass.value = 'unselected-btn'
+                    RemoveTextClass.value = 'unselected-btn-text'
+                    isDotMasked.value = true
+                }
+                else if (value === 'Remove') {
+                    AddClass.value = 'unselected-btn'
+                    AddTextClass.value = 'unselected-btn-text'
+                    RemoveClass.value = 'selected-btn'
+                    RemoveTextClass.value = 'selected-btn-text'
+                    isDotMasked.value = false
+                }
+                ResetClass.value = 'abled'
+                UndoClass.value = 'abled'
+            }
+            else if (Boxes.isBoxed.value) {
                 if (value === 'Add') {
                     AddClass.value = 'selected-btn'
                     AddTextClass.value = 'selected-btn-text'
@@ -141,29 +218,25 @@
     }
 
     function Reset() {
-        if (selection.value === 1) {
-            Dots.operation.value = 4;
-        }
-        else if (selection.value === 2) {
-            Boxes.operation.value = 4;
-        }
+        Dots.operation.value = 2
+        Boxes.operation.value = 2
     }
 
     function Undo() {
-        if (selection.value === 1) {
-            Dots.operation.value = 1;
+        if (Dots.isDotted.value) {
+            Dots.operation.value = 1
         }
-        else if (selection.value === 2) {
-            Boxes.operation.value = 1;
+        else if (!Dots.isDotted.value && Boxes.isBoxed.value) {
+            Boxes.operation.value = 1
         }
     }
 
     function Redo() {
-        if (selection.value === 1) {
-            Dots.operation.value = 3;
+        if (Boxes.isBoxed_redo.value) {
+            Boxes.operation.value = 3
         }
-        else if (selection.value === 2) {
-            Boxes.operation.value = 3;
+        else if (!Boxes.isBoxed_redo.value && Dots.isDotted_redo.value) {
+            Dots.operation.value = 3
         }
     }
 
@@ -184,8 +257,12 @@
             RemoveTextClass.value = 'unselected-btn-text'
             ResetClass.value = 'abled'
             UndoClass.value = 'abled'
+            if (Boxes.isBoxed_redo.value === true) {
+                RedoClass.value = 'disabled'
+                Boxes.operation.value = 4
+            }
         }
-        else if (newValue === false && oldValue === true) {
+        else if (newValue === false && oldValue === true && Boxes.isBoxed.value === false) {
             AddClass.value = 'selected-btn'
             AddTextClass.value = 'selected-btn-text'
             RemoveClass.value = 'prohibit-btn'
@@ -193,13 +270,21 @@
             ResetClass.value = 'disabled'
             UndoClass.value = 'disabled'
         }
+        else if (newValue === false && oldValue === true && Boxes.isBoxed.value === true) {
+            AddClass.value = 'selected-btn'
+            AddTextClass.value = 'selected-btn-text'
+            RemoveClass.value = 'unselected-btn'
+            RemoveTextClass.value = 'unselected-btn-text'
+            ResetClass.value = 'abled'
+            UndoClass.value = 'abled'
+        }
     })
 
     watch(Dots.isDotted_redo, (newValue, oldValue) => {
         if (newValue === true && oldValue === false) {
             RedoClass.value = 'abled'
         }
-        else if (newValue === false && oldValue === true) {
+        else if (newValue === false && oldValue === true && Boxes.isBoxed_redo.value === false) {
             RedoClass.value = 'disabled'
         }
     })
@@ -210,6 +295,8 @@
             UndoClass.value = 'abled'
         }
         else if (newValue === false && oldValue === true) {
+            RemoveClass.value = 'prohibit-btn'
+            RemoveTextClass.value = 'prohibit-btn-text'
             ResetClass.value = 'disabled'
             UndoClass.value = 'disabled'
         }
@@ -226,32 +313,30 @@
 </script>
 
 <template>
-    <ul class="myTools">Tools
-        <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=#D3D3D3,strength=10)" width="90%" color=#D3D3D3 SIZE=2 />
-        <li style="text-align: left;" class="normal-btn"><input type="file" ref="fileInput" @change="readFile" accept=".jpg,.jpeg" style="display: none;" />
-            <button @click = "selectFile" class="upload-btn">&nbsp;&nbsp;<MyUpLoad></MyUpLoad>Upload</button>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<button class="gallary-btn"><MyGallary></MyGallary>Gallary</button>
+    <ul class="myTools">
+        <li style="text-align: left;" class="normal-btn">
+            <button @click="openFileDialog" class="upload-btn"><MyUpLoad></MyUpLoad>&nbsp;&nbsp;Upload</button>
+            <button @click="createDirectory" class="gallary-btn"><MyGallary></MyGallary>&nbsp;&nbsp;Gallary</button>
+            <Prompt ref="promptRef"/>
         </li>
-        <li @mouseover="MouseOverBTN('click')" @mouseout="MouseOutBTN('click')" @click="MouseClickBTN('click')" 
+        <li @click="MouseClickBTN('click')" 
                 :class="selection === 1 ? 'selected-tool' : 'unselected-tool'" id="click">
-            <div style="text-align: left">&nbsp;<MyClick></MyClick>&nbsp;&nbsp;Hover & Click</div>
-            <p v-show="appear === 1 || selection === 1">Click an object one or more times. Shift-chick to remove regions.</p>
+            <div style="text-align: left">&nbsp;<MyClick></MyClick>&nbsp;&nbsp;Click</div>
         </li>
-        <li @mouseover="MouseOverBTN('box')" @mouseout="MouseOutBTN('box')" @click="MouseClickBTN('box')" 
+        <li @click="MouseClickBTN('box')" 
                 :class="selection === 2 ? 'selected-tool' : 'unselected-tool'" id="box">
             <div style="text-align: left">&nbsp;<MyBox></MyBox>&nbsp;&nbsp;Box</div>
-            <p v-show="appear === 2 || selection === 2">Rough draw a box around an object.</p>
         </li>
         <li class="mask-btns-container">
             <div>
                 <div class="mask-btns">
                     <div @click="ChangeMaskBtn('Add')">
-                        <p :class="AddClass">+</p>
-                        <p :class="AddTextClass">Add Mask</p>
+                        <p :class="AddClass">+</p>&nbsp;&nbsp;
+                        <p :class="AddTextClass">Add</p>
                     </div>
                     <div @click="ChangeMaskBtn('Remove')">
-                        <p :class="RemoveClass">-</p>
-                        <p :class="RemoveTextClass">Remove Area</p>
+                        <p :class="RemoveClass">-</p>&nbsp;&nbsp;
+                        <p :class="RemoveTextClass">Remove</p>
                     </div>
                 </div>
                 <div class="operation-btns">
@@ -268,13 +353,13 @@
     .myTools {
         color: #000000;
         font: bold 2.5rem Arial, sans-serif;
-        width: 15vw;
+        width: 10vw;
         height: 70vh;
         border: 0.2rem solid #D3D3D3;
-        border-radius: 1.5rem;
+        border-radius: 0rem 1.5rem 1.5rem 0rem;
         box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
         padding: 1.5rem;
-        margin-left: 3rem;
+        margin: 1.5rem 0rem;
         display: flex;
         list-style-type: none;
         flex-direction: column;
@@ -285,7 +370,7 @@
     .myTools .normal-btn {
         background-color: #FFFFFF;
         color: #000000;
-        font: bold 1.4rem Arial, sans-serif;
+        font: bold 1.8rem Arial, sans-serif;
         border-radius: 1.5rem;
         border: 0.2rem solid #D3D3D3;
         padding: 0.5rem 1rem;
@@ -295,7 +380,7 @@
         vertical-align: top;     
     }
 
-    .myTools .upload-btn {
+    .normal-btn .upload-btn {
         background: none;
         border: none;
         color: inherit; 
@@ -327,10 +412,10 @@
 
     .myTools .selected-tool {
         background-color: #FFFFFF;
-        color: #2962D9;
+        color: #409eff;
         font: bold 1.8rem Arial, sans-serif;
         border-radius: 1.5rem;
-        border: 0.2rem solid #2962D9;
+        border: 0.2rem solid #409eff;
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
@@ -348,28 +433,18 @@
         margin: 1rem;
         cursor: pointer;
     }
-
-    li p {
-        font: 1.2rem Arial, sans-serif;
-        color: #BEBEBE;
-        margin-top: 0.5rem;
-        word-break: keep-all;
-    }
-
-    .selected-tool p {    
-        color: #2962D9;
-    }
     
     li .mask-btns {
         display: flex;
-        flex-direction: row;
-        justify-content: space-around;
+        flex-direction: column;
+        justify-content: space-between;
         align-items: center;
     }
 
     .mask-btns div {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
+        width: 90%;
         justify-content: start;
         align-items: center;
     }
@@ -377,7 +452,7 @@
     .mask-btns .selected-btn {
         color: #FFFFFF;
         font: bold 2.5rem Arial, sans-serif;
-        background-color: #2962D9;
+        background-color: #409eff;
         border-radius: 0.5rem;
         padding: 0%;
         margin: 0%;
@@ -387,7 +462,7 @@
     }
 
     .mask-btns .selected-btn-text {
-        color: #2962D9;
+        color: #409eff;
         font: bold 1.5rem Arial, sans-serif;
         word-break: keep-all;
         cursor: pointer;
@@ -435,13 +510,13 @@
 
     li .operation-btns {
         display: flex;
-        flex-direction: row;
+        flex-direction: column;
         justify-content: space-between;
         align-items: center;
         background-color: #E8E8E8;
         border: 0.1rem solid #E8E8E8;
         border-radius: 1rem;
-        height: 3rem;
+        height: 9rem;
     }
 
     .operation-btns .abled {
