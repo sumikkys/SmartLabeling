@@ -316,7 +316,7 @@
     <ul class="myTools">
         <li style="text-align: left;" class="normal-btn">
             <button @click="openFileDialog" class="upload-btn"><MyUpLoad></MyUpLoad>&nbsp;&nbsp;Upload</button>
-            <button @click="createDirectory" class="gallary-btn"><MyGallary></MyGallary>&nbsp;&nbsp;Gallary</button>
+            <button @click="createDirectory" class="gallary-btn"><MyGallary></MyGallary>&nbsp;&nbsp;New</button>
             <Prompt ref="promptRef"/>
         </li>
         <li @click="MouseClickBTN('click')" 
