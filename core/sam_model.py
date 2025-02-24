@@ -261,7 +261,7 @@ class SamDecoder:
         point_labels = np.array(point_labels, dtype=np.float32)
         if logits is not None:
             mask_inputs = 1. / (1. + np.exp(-logits.astype(np.float32)))
-            masks, _, logits = self.run(
+            masks, _, logits_out = self.run(
                 img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
@@ -269,7 +269,7 @@ class SamDecoder:
                 mask_input=mask_inputs,
             )
         else:
-            masks, _, logits = self.run(
+            masks, _, logits_out = self.run(
                 img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
@@ -282,13 +282,13 @@ class SamDecoder:
         # show_points(point_coords, point_labels, plt.gca())
         # plt.axis('off')
         # plt.show()
-        return masks, logits
+        return masks, logits_out
 
     def bBox(self, image_embeddings, img_file, boxes, logits=None):
         origin_image_size = img_file.shape[:2]
         boxes = np.array(boxes)
 
-        masks, _, _ = self.run(
+        masks, _, logits_out = self.run(
             img_embeddings=image_embeddings,
             origin_image_size=origin_image_size,
             boxes=boxes,
@@ -301,7 +301,7 @@ class SamDecoder:
         # plt.axis('off')
         # plt.show()
 
-        return masks , logits
+        return masks, logits_out
 
     def hybrid(self, image_embeddings, img_file, point_coords, point_labels, boxes, logits=None):
         origin_image_size = img_file.shape[:2]
@@ -310,7 +310,7 @@ class SamDecoder:
         boxes = np.array(boxes)
         if logits is not None:
             mask_inputs = 1. / (1. + np.exp(-logits.astype(np.float32)))
-            masks, _, logits = self.run(
+            masks, _, logits_out = self.run(
                 img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
@@ -319,7 +319,7 @@ class SamDecoder:
                 mask_input=mask_inputs,
             )
         else:
-            masks, _, logits = self.run(
+            masks, _, logits_out = self.run(
                 img_embeddings=image_embeddings,
                 origin_image_size=origin_image_size,
                 point_coords=point_coords,
@@ -334,5 +334,5 @@ class SamDecoder:
         # show_box(boxes, plt.gca())
         # plt.axis('off')
         # plt.show()
-        return masks, logits
+        return masks, logits_out
 

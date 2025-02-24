@@ -45,7 +45,6 @@ class OperationManager:
             logits = None
 
         masks, logits= generate_mask('add', request, self.current_state, img_embeddings, img_file, logits)
-
         self.history.append(['add', request, logits])
         self.future.clear()
         #return "Added successfully", None #测试版本保留
@@ -99,8 +98,8 @@ class OperationManager:
             except Exception as e:
                 return f"Error generating mask: {str(e)}", None
 
-            # return "Undo operation completed", masks
-            return "Undo operation completed", None #测试版本保留
+            return "Undo operation completed", masks
+            # return "Undo operation completed", None #测试版本保留
 
         return "No operation to undo", None
 
@@ -134,11 +133,11 @@ class OperationManager:
             masks, logits= generate_mask('redo', request, self.current_state, img_embeddings, img_file, logits)
             self.history[-1][2] = logits
             if not self.future:
-                return "come to latest", None
-                #return "come to latest", masks
+                # return "come to latest", None
+                return "come to latest", masks
 
-            #return "Redo operation completed", masks
-            return "Redo operation completed", None #测试版本保留
+            return "Redo operation completed", masks
+            # return "Redo operation completed", None #测试版本保留
         return "No operation to redo", None
 
     ###当前版本弃用###
@@ -176,8 +175,8 @@ class OperationManager:
 
         masks, _ = generate_mask('remove', request, self.current_state, img_embeddings, img_file)
 
-        return "Operation completed", None #测试版本保留
-        #return "Operation completed", masks
+        # return "Operation completed", None #测试版本保留
+        return "Operation completed", masks
 
     def get_current_state(self):
         """Get the current state"""

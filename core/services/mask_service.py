@@ -21,8 +21,7 @@ def generate_mask(operation, request, current_state, img_embeddings, img_file, l
         else:
             if not current_state["boxes"]:
                 raise ValueError("Boxes is not None")
-            masks,_ = decoder.bBox(img_embeddings, img_file, boxes=current_state["boxes"])
-            logits = None
-        masks_list = masks.tolist()
-        masks_2d = [sublist for matrix in masks_list for sublist in matrix]
+            masks, logits = decoder.bBox(img_embeddings, img_file, boxes=current_state["boxes"])
+        masks_2d = masks.astype(int).squeeze().tolist()
+        
     return masks_2d, logits

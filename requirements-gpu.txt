@@ -1,7 +1,7 @@
 fastapi~=0.115.8
 matplotlib~=3.10.0
 numpy~=2.2.3
-onnxruntime~=1.17.1
+onnxruntime-gpu~=1.17.1
 opencv_python~=4.10.0.84
 Pillow~=11.1.0
 pydantic~=2.10.6
