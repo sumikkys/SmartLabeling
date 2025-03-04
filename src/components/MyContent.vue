@@ -1,13 +1,13 @@
 <script setup lang="ts">
   import AnnotationSidebar from '../components/AnnotationSidebar.vue'
   import { ref, watch, onMounted } from 'vue'
-  import { selection } from '../js/selection'
+  import { selection, pictureSelection } from '../js/selection'
   import { Dots, isDotMasked } from '../js/Dots'
   import { Boxes } from '../js/Boxes'
   import { imgPath, imgURL, projectPath, projectName } from '../js/file'
   import { tempMaskMatrix } from '../js/Masks'
-  import axios from 'axios'
-  import type { AxiosError } from 'axios'
+  import axios, { AxiosError } from 'axios'
+  import { sendImageData, sendSwitchImage } from '../js/telegram'
 
   let pos = ref({
     x: 0,
@@ -153,6 +153,8 @@
       img_size_y = img.naturalHeight
       ctx.beginPath()
       tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+      console.log(pos_x, pos_y, zoom_x, zoom_y)
+      console.log(img_size_x, img_size_y, img.offsetWidth, img.offsetHeight)
     }
 
     canvas.addEventListener('mousedown', function(e: MouseEvent) {
@@ -214,25 +216,25 @@
   }
 
   // 发送图片
-  const sendImageData = async () => {
-    try {
-        const response = await api.post('/api/uploadimage',{
-          "image_path": imgPath.value,
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-        })
-        //在这里处理数据
-        console.log('upLoadImage 操作结果:', response.data)
+  // const sendImageData = async () => {
+  //   try {
+  //       const response = await api.post('/api/uploadimage',{
+  //         "image_path": imgPath.value,
+  //         "project_name": projectName.value,
+  //         "storage_path": projectPath.value,
+  //       })
+  //       //在这里处理数据
+  //       console.log('upLoadImage 操作结果:', response.data)
         
-      }catch (err: unknown) {
-    // 类型安全的错误转换
-    if (err instanceof Error) {
-      handleError(err)
-    } else {
-      handleError(String(err))
-    }
-  }      
-  };
+  //     }catch (err: unknown) {
+  //     // 类型安全的错误转换
+  //     if (err instanceof Error) {
+  //       handleError(err)
+  //     } else {
+  //       handleError(String(err))
+  //     }
+  //   }      
+  // };
 
   // 画点
   function drawPoint(e: MouseEvent) {
@@ -558,18 +560,16 @@
         sendResetData()
         Dots.resetDots()
         Boxes.resetBox()
-        sendImageData()
+        if (pictureSelection.value === 1) {
+          sendImageData()
+        }
+        else if (pictureSelection.value === 2) {
+          sendSwitchImage()
+        }
         imgURL.value = `file://${newVal}`
         isDotMasked.value = true
         draw_Image(imgURL.value);  // 重新加载并绘制新图片
       }
-  })
-
-  watch(imgURL, async(newVal) => {
-    Dots.resetDots()
-    Boxes.resetBox()
-    sendResetData()
-    draw_Image(newVal)
   })
 </script>
 

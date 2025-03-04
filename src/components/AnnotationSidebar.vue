@@ -6,8 +6,9 @@
     import MyDownIcon from './icons/MyDownIcon.vue'
     import MyClassIcon from './icons/MyClassIcon.vue'
     import MyUpIcon from './icons/MyUpIcon.vue'
-    import { imgPath, projectPath, projectName, imgURL, Paths } from '../js/file'
+    import { imgPath, projectPath, projectName, Paths } from '../js/file'
     import { tempMaskMatrix } from '../js/Masks'
+    import { pictureSelection } from '../js/selection'
 
     let CurrentImageName = ref('')
     let showSearchBar = ref(false)
@@ -86,38 +87,58 @@
     const CurrentAllClass = ref<Array<string>>([])
     CurrentClass.value = AllClass.value[0]
 
-    //网络部分
-    const sendSwitchImage = async (id:number) => {
-        try {
-            imgURL.value = Paths.findPath(id)
-            const response = await api.post('/api/switch_image', {
-                "image_name": imgURL.value.split('\\').pop().split('/').pop(),
-                "project_name": projectName.value,
-                "project_path": projectPath.value 
-            })
-            console.log(response.data)
-            for (; CurrentAllClass.value.length > 0;) {
-                CurrentAllClass.value.pop()
-            }
-            for (; MasksList.value.length > 0;) {
-                MasksList.value.pop()
-            }
-            const tempClassList : Array<string> = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
-            const tempMaskNameList : Array<string> = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
-            tempClassList.forEach(tempClass => {
-                CurrentAllClass.value.push(tempClass)
-            })
-            tempMaskNameList.forEach(tempMaskName => {
-                MasksList.value.push(tempMaskName)
-            })
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
+    // // 切换图片
+    // const sendSwitchImage = async (id:number) => {
+    //     try {
+    //         pictureSelection.value = 2
+    //         imgPath.value = Paths.findPath(id)
+    //         const response = await api.post('/api/switch_image', {
+    //             "image_name": imgPath.value.split('\\').pop().split('/').pop(),
+    //             "project_name": projectName.value,
+    //             "project_path": projectPath.value 
+    //         })
+    //         console.log(response.data)
+    //         for (; CurrentAllClass.value.length > 0;) {
+    //             CurrentAllClass.value.pop()
+    //         }
+    //         for (; MasksList.value.length > 0;) {
+    //             MasksList.value.pop()
+    //         }
+    //         const tempClassList : Array<string> = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
+    //         const tempMaskNameList : Array<string> = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
+    //         tempClassList.forEach(tempClass => {
+    //             CurrentAllClass.value.push(tempClass)
+    //         })
+    //         tempMaskNameList.forEach(tempMaskName => {
+    //             MasksList.value.push(tempMaskName)
+    //         })
+    //     } catch (err: unknown) {
+    //         // 类型安全的错误转换
+    //         if (err instanceof Error) {
+    //             handleError(err)
+    //         } else {
+    //             handleError(String(err))
+    //         }
+    //     }
+    // }
+
+    const SwitchImage = (id : number) => {
+        pictureSelection.value = 2
+        imgPath.value = Paths.findPath(id)
+        for (; CurrentAllClass.value.length > 0;) {
+            CurrentAllClass.value.pop()
         }
+        for (; MasksList.value.length > 0;) {
+            MasksList.value.pop()
+        }
+        const tempClassList : Array<string> = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
+        const tempMaskNameList : Array<string> = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
+        tempClassList.forEach(tempClass => {
+            CurrentAllClass.value.push(tempClass)
+        })
+        tempMaskNameList.forEach(tempMaskName => {
+            MasksList.value.push(tempMaskName)
+        })
     }
 
     // 增加mask
@@ -244,7 +265,7 @@
         } else {
             CurrentImageName.value = ImageList.value[ImageList.value.length - 1];
         }
-        sendSwitchImage(ImageList.value.indexOf(CurrentImageName.value))
+        SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
     };
     
     const nextImage = () => {
@@ -254,7 +275,7 @@
         } else {
             CurrentImageName.value = ImageList.value[0];
         }
-        sendSwitchImage(ImageList.value.indexOf(CurrentImageName.value))
+        SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
     };
 
     const showBar = () => {
@@ -273,7 +294,7 @@
 
     const selectionImage =(option:string)=> {
         CurrentImageName.value = option;
-        sendSwitchImage(ImageList.value.indexOf(CurrentImageName.value))
+        SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
         showSearchBar.value = !showSearchBar.value;
     }
 

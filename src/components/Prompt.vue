@@ -8,6 +8,7 @@
   
   const isVisible = ref(false);
   const inputValue = ref('');
+  const isInput = ref(false);
   let resolvePromise: (value: string | null) => void;
   
   const show = (): Promise<string | null> => {
