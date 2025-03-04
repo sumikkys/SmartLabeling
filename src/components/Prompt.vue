@@ -1,50 +1,64 @@
 <script setup lang="ts">
-  import { ref } from 'vue';
-  
-  const props = defineProps({
-    title: { type: String, default: '请输入项目名称' },
-    placeholder: { type: String, default: '' }
-  });
-  
-  const isVisible = ref(false);
-  const inputValue = ref('');
-  const isInput = ref(false);
-  let resolvePromise: (value: string | null) => void;
-  
-  const show = (): Promise<string | null> => {
-    isVisible.value = true;
-    inputValue.value = '';
-    return new Promise((resolve) => {
-      resolvePromise = resolve;
-    });
-  };
-  
-  const handleConfirm = () => {
-    isVisible.value = false;
-    resolvePromise?.(inputValue.value);
-    resolvePromise = null!;
-  };
-  
-  const handleCancel = () => {
-    isVisible.value = false;
-    resolvePromise?.(null);
-    resolvePromise = null!;
-  };
-  
-  defineExpose({ show });
+  import { ref } from 'vue'
+
+const props = defineProps({
+  title: { type: String, default: '请输入新建项目名称' },
+  placeholder: { type: String, default: '' },
+  successText: { type: String, default: '创建成功！' }
+})
+
+const isVisible = ref(false)
+const inputValue = ref('')
+const showSuccess = ref(false)
+let resolvePromise: (value: string | null) => void
+
+const show = (): Promise<string | null> => {
+  isVisible.value = true
+  inputValue.value = ''
+  showSuccess.value = false
+  return new Promise((resolve) => {
+    resolvePromise = resolve
+  })
+}
+
+const handleConfirm = () => {
+  if (!showSuccess.value) {
+    showSuccess.value = true
+  } else {
+    isVisible.value = false
+    resolvePromise?.(inputValue.value)
+    resolvePromise = null!
+  }
+}
+
+const handleCancel = () => {
+  isVisible.value = false
+  resolvePromise?.(null)
+  resolvePromise = null!
+}
+
+defineExpose({ show })
 </script>
 
 <template>
-    <div v-if="isVisible" class="prompt-modal">
-        <div class="prompt-content">
-            <h3>{{ title }}</h3>
-            <input v-model="inputValue" :placeholder="placeholder" @keyup.enter="handleConfirm"/>
-            <div class="button-group">
-                <button @click="handleConfirm">确定</button>
-                <button @click="handleCancel">取消</button>
-            </div>
-        </div>
+  <div v-if="isVisible" class="prompt-modal">
+    <div class="prompt-content">
+      <div v-if="!showSuccess">
+        <h3>{{ title }}</h3>
+        <input v-model="inputValue" :placeholder="placeholder" @keyup.enter="handleConfirm">
+      </div>
+      <div v-else>
+        <h3 style="color: #67c23a;">{{ successText }}</h3>
+        <p class="success-message">新创建项目名称：{{ inputValue }}</p>
+      </div>
+      <div class="button-group">
+        <button @click="handleConfirm">
+          {{ showSuccess ? '关闭' : '确定' }}
+        </button>
+        <button v-if="!showSuccess" @click="handleCancel">取消</button>
+      </div>
     </div>
+  </div>
 </template>
   
 <style scoped>
@@ -77,6 +91,11 @@
         border-radius: 4px;
     }
     
+    .success-message {
+      margin: 10px 0;
+      color: #606266;
+    }
+
     .button-group {
         display: flex;
         justify-content: flex-end;
