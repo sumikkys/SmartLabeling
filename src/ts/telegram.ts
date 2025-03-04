@@ -78,7 +78,7 @@ export const checkBackendReady = () => {
     try {
       const response = await api.get('/api/status') 
       if(response.data.initialized){
-        clearInterval(interval);
+        clearInterval(interval)
         console.log("后端初始化完成！")
         initialized.value = response.data.initialized
       }
