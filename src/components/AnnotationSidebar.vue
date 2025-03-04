@@ -333,7 +333,9 @@
     watch(imgPath, async (newVal) => {
         const imgName = newVal.split('\\').pop().split('/').pop()
         CurrentImageName.value = imgName
-        ImageList.value.push(imgName)
+        if (pictureSelection.value === 1) {
+            ImageList.value.push(imgName)
+        }
         await nextTick()
     })
 </script>
