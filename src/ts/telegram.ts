@@ -1,9 +1,14 @@
 // telegram.ts
 import { ref } from 'vue'
 import axios, { AxiosError } from 'axios'
-import { imgPath, projectPath, projectName } from '../js/file'
+import { imgPath, projectPath, projectName } from './file'
 
-export const myCanvas = ref()
+// 判断是否是选择图片或上传图片
+export const pictureSelection = ref(1)
+
+// 是否初始化加载
+export const initialized = ref(false)
+
 // Axios 实例配置
 export const api = axios.create({
   headers: {
@@ -12,10 +17,10 @@ export const api = axios.create({
 })
 
 // 定义 error 变量
-export const error = ref<string | null>(null)
+const error = ref<string | null>(null)
 
 // 定义增强型错误类型
-export type EnhancedError = 
+type EnhancedError = 
   | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
   | Error                              // 标准错误对象
   | string                             // 字符串类型的错误消息
@@ -68,6 +73,26 @@ export const handleError = (err: EnhancedError) => {
   }
 }
 
+export const checkBackendReady = () => {
+  const interval = setInterval(async() => {
+    try {
+      const response = await api.get('/api/status') 
+      if(response.data.initialized){
+        clearInterval(interval);
+        console.log("后端初始化完成！")
+        initialized.value = response.data.initialized
+      }
+    }catch (err: unknown) {
+      // 类型安全的错误转换
+      if (err instanceof Error) {
+        handleError(err)
+      } else {
+        handleError(String(err))
+      }
+    }
+  }, 1000);  // 每秒检查一次
+}
+
 // 发送图片
 export const sendImageData = async () => {
   try {
@@ -88,6 +113,25 @@ export const sendImageData = async () => {
   }      
 };
 
+// 创建新项目
+export const CreateNewProject = async () => {
+  try {
+    const response = await api.post('/api/create-project', {
+      "project_name": projectName.value,
+      "storage_path": projectPath.value
+    })
+    console.log(response.data)
+  } catch (err: unknown) {
+    // 类型安全的错误转换
+    if (err instanceof Error) {
+        handleError(err)
+    } else {
+        handleError(String(err))
+    }
+  }
+}
+
+// 切换图片
 export const sendSwitchImage = async () => {
   try {
       const response = await api.post('/api/switch_image', {

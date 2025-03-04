@@ -130,8 +130,8 @@ app.whenReady().then(() => {
       filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },]
     })
 
-    if (result.filePaths && result.filePaths[0]) {
-      return result.filePaths[0]  // 返回第一个文件的绝对路径
+    if (result.filePaths) {
+      return result.filePaths  // 返回第一个文件的绝对路径
     }
     return null
   })

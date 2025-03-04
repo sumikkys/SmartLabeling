@@ -1,13 +1,14 @@
 <script setup lang="ts">
-  import AnnotationSidebar from '../components/AnnotationSidebar.vue'
   import { ref, watch, onMounted } from 'vue'
-  import { selection, pictureSelection } from '../js/selection'
-  import { Dots, isDotMasked } from '../js/Dots'
-  import { Boxes } from '../js/Boxes'
-  import { imgPath, imgURL, projectPath, projectName } from '../js/file'
-  import { tempMaskMatrix } from '../js/Masks'
-  import axios, { AxiosError } from 'axios'
-  import { sendImageData, sendSwitchImage } from '../js/telegram'
+  import { selection } from '../ts/selection'
+  import { Dots, isDotMasked } from '../ts/Dots'
+  import { Boxes } from '../ts/Boxes'
+  import { imgPath, imgURL, projectPath, projectName } from '../ts/file'
+  import { tempMaskMatrix } from '../ts/Masks'
+  import { api, handleError, pictureSelection } from '../ts/telegram'
+  import { checkBackendReady, sendImageData, sendSwitchImage } from '../ts/telegram'
+  import AnnotationSidebar from '../components/AnnotationSidebar.vue'
+  import AwaitBackend from '../components/AwaitBackend.vue'
 
   let pos = ref({
     x: 0,
@@ -43,94 +44,11 @@
   let pos_y = 0
 
   const myCanvas = ref()
-  // Axios 实例配置
-  const api = axios.create({
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  })
-
-  // 定义 error 变量
-  const error = ref<string | null>(null)
-
-  // 定义增强型错误类型
-  type EnhancedError = 
-    | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
-    | Error                              // 标准错误对象
-    | string                             // 字符串类型的错误消息
-
-  // 统一错误处理函数
-  const handleError = (err: EnhancedError) => {
-    // 处理字符串类型错误
-    if (typeof err === 'string') {
-      error.value = err
-      console.error('API Error:', err)
-      return
-    }
-
-    // 处理Error对象
-    if (err instanceof Error) {
-      // 类型断言为AxiosError
-      const axiosError = err as AxiosError<{ message?: string }>
-      
-      // 处理带响应的错误
-      if (axiosError.response) {
-        // 状态码映射
-        const statusMessage = (() => {
-          switch (axiosError.response.status) {
-            case 400: return '请求参数错误'
-            case 404: return '资源不存在'
-            case 415: return '不支持的媒体类型'
-            case 500: return '服务器内部错误'
-            default: return `请求失败 (${axiosError.response.status})`
-          }
-        })()
-
-        error.value = axiosError.response.data?.message || statusMessage
-        console.error('API Error:', {
-          status: axiosError.response.status,
-          message: axiosError.message,
-          url: axiosError.config?.url,
-          data: axiosError.response.data
-        })
-      } 
-      // 处理无响应的网络错误
-      else if (axiosError.request) {
-        error.value = '网络连接异常，请检查网络'
-        console.error('Network Error:', axiosError.message)
-      }
-      // 处理其他Error类型
-      else {
-        error.value = err.message
-        console.error('Runtime Error:', err)
-      }
-    }
-  }
 
   onMounted(() => {
     draw_Image(imgURL.value) // 初始绘制图片
-    checkBackendReady();
+    checkBackendReady()
   })
-
-  function checkBackendReady() {
-    const interval = setInterval(async() => {
-        try {
-          const response = await api.get('/api/status') 
-          if(response.data.initialized){
-            clearInterval(interval);
-            console.log("后端初始化完成！");
-            // 这里可以执行后续逻辑
-        }
-      }catch (err: unknown) {
-        // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
-    }, 1000);  // 每秒检查一次
-  }
 
   // 绘制图片
   function draw_Image(imageSrc: string) {
@@ -153,8 +71,6 @@
       img_size_y = img.naturalHeight
       ctx.beginPath()
       tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
-      console.log(pos_x, pos_y, zoom_x, zoom_y)
-      console.log(img_size_x, img_size_y, img.offsetWidth, img.offsetHeight)
     }
 
     canvas.addEventListener('mousedown', function(e: MouseEvent) {
@@ -215,27 +131,6 @@
     })
   }
 
-  // 发送图片
-  // const sendImageData = async () => {
-  //   try {
-  //       const response = await api.post('/api/uploadimage',{
-  //         "image_path": imgPath.value,
-  //         "project_name": projectName.value,
-  //         "storage_path": projectPath.value,
-  //       })
-  //       //在这里处理数据
-  //       console.log('upLoadImage 操作结果:', response.data)
-        
-  //     }catch (err: unknown) {
-  //     // 类型安全的错误转换
-  //     if (err instanceof Error) {
-  //       handleError(err)
-  //     } else {
-  //       handleError(String(err))
-  //     }
-  //   }      
-  // };
-
   // 画点
   function drawPoint(e: MouseEvent) {
     const canvas = myCanvas.value
@@ -280,8 +175,10 @@
   function undoDot() {
     let last_dot = Dots.undoDot()
     Dots.operation.value = 0
-    send_pos.value.x = (last_dot.x - pos_x) / zoom_x
-    send_pos.value.y = (last_dot.y - pos_y) / zoom_y
+    if (last_dot) {
+      send_pos.value.x = (last_dot.x - pos_x) / zoom_x
+      send_pos.value.y = (last_dot.y - pos_y) / zoom_y
+    }
     sendUndoPointData()
   }
 
@@ -289,8 +186,10 @@
   function redoDot() {
     let last_dot_redo = Dots.redoDot()
     Dots.operation.value = 0
-    send_pos.value.x = (last_dot_redo.x - pos_x) / zoom_x
-    send_pos.value.y = (last_dot_redo.y - pos_y) / zoom_y
+    if (last_dot_redo) {
+      send_pos.value.x = (last_dot_redo.x - pos_x) / zoom_x
+      send_pos.value.y = (last_dot_redo.y - pos_y) / zoom_y
+    }
     sendRedoPointData()
   }
 
@@ -555,20 +454,20 @@
     }
   })
 
-  watch(imgPath,(newVal)=> {
+  watch(imgPath, async(newVal)=> {
       if (newVal != null) {
-        sendResetData()
+        await sendResetData()
         Dots.resetDots()
         Boxes.resetBox()
         if (pictureSelection.value === 1) {
-          sendImageData()
+          await sendImageData()
         }
         else if (pictureSelection.value === 2) {
-          sendSwitchImage()
+          await sendSwitchImage()
         }
         imgURL.value = `file://${newVal}`
         isDotMasked.value = true
-        draw_Image(imgURL.value);  // 重新加载并绘制新图片
+        draw_Image(imgURL.value)  // 重新加载并绘制新图片
       }
   })
 </script>
@@ -581,6 +480,7 @@
     </div>
     <AnnotationSidebar></AnnotationSidebar>
   </div>
+  <AwaitBackend></AwaitBackend>
 </template>
 
 <style scoped>
@@ -600,7 +500,7 @@
         width: 100%;
         height: 100%;
         margin: 0;
-        border: 1px solid #ccc;
+        border: 1px solid #CCCCCC;
         z-index: 1;
         position: absolute;
     }

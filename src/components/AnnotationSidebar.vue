@@ -1,14 +1,13 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
-    import axios, { AxiosError } from 'axios'
+    import { api, handleError, pictureSelection } from '../ts/telegram'
+    import { imgPath, projectPath, projectName, Paths } from '../ts/file'
+    import { tempMaskMatrix } from '../ts/Masks'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
     import MyRightImage from './icons/MyRightImageIcon.vue'
     import MyDownIcon from './icons/MyDownIcon.vue'
     import MyClassIcon from './icons/MyClassIcon.vue'
     import MyUpIcon from './icons/MyUpIcon.vue'
-    import { imgPath, projectPath, projectName, Paths } from '../js/file'
-    import { tempMaskMatrix } from '../js/Masks'
-    import { pictureSelection } from '../js/selection'
 
     let CurrentImageName = ref('')
     let showSearchBar = ref(false)
@@ -20,107 +19,12 @@
     let searchQueryImage = ref('')
     let AddOneClassName = ref('')
 
-    const api = axios.create({
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-
-    const error = ref<string | null>(null)
-    // 定义增强型错误类型
-    type EnhancedError = 
-    | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
-    | Error                              // 标准错误对象
-    | string                             // 字符串类型的错误消息
-
-    // 统一错误处理函数
-    const handleError = (err: EnhancedError) => {
-    // 处理字符串类型错误
-        if (typeof err === 'string') {
-            error.value = err
-            console.error('API Error:', err)
-            return
-        }
-        // 处理Error对象
-        if (err instanceof Error) {
-        // 类型断言为AxiosError
-            const axiosError = err as AxiosError<{ message?: string }>
-            // 处理带响应的错误
-            if (axiosError.response) {
-                // 状态码映射
-                const statusMessage = (() => {
-                    switch (axiosError.response.status) {
-                    case 400: return '请求参数错误'
-                    case 404: return '资源不存在'
-                    case 415: return '不支持的媒体类型'
-                    case 500: return '服务器内部错误'
-                    default: return `请求失败 (${axiosError.response.status})`
-                    }
-                })()
-
-                error.value = axiosError.response.data?.message || statusMessage
-                    console.error('API Error:', {
-                        status: axiosError.response.status,
-                        message: axiosError.message,
-                        url: axiosError.config?.url,
-                        data: axiosError.response.data
-                })
-            } 
-            // 处理无响应的网络错误
-            else if (axiosError.request) {
-                error.value = '网络连接异常，请检查网络'
-                console.error('Network Error:', axiosError.message)
-            }
-            // 处理其他Error类型
-            else {
-                error.value = err.message
-                console.error('Runtime Error:', err)
-            }
-        }
-    } 
-
-
     // 定义数据列表
     const ImageList = ref<Array<string>>([])
     const MasksList = ref<Array<string>>([])
     const AllClass = ref<Array<string>>([])
     const CurrentAllClass = ref<Array<string>>([])
     CurrentClass.value = AllClass.value[0]
-
-    // // 切换图片
-    // const sendSwitchImage = async (id:number) => {
-    //     try {
-    //         pictureSelection.value = 2
-    //         imgPath.value = Paths.findPath(id)
-    //         const response = await api.post('/api/switch_image', {
-    //             "image_name": imgPath.value.split('\\').pop().split('/').pop(),
-    //             "project_name": projectName.value,
-    //             "project_path": projectPath.value 
-    //         })
-    //         console.log(response.data)
-    //         for (; CurrentAllClass.value.length > 0;) {
-    //             CurrentAllClass.value.pop()
-    //         }
-    //         for (; MasksList.value.length > 0;) {
-    //             MasksList.value.pop()
-    //         }
-    //         const tempClassList : Array<string> = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
-    //         const tempMaskNameList : Array<string> = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
-    //         tempClassList.forEach(tempClass => {
-    //             CurrentAllClass.value.push(tempClass)
-    //         })
-    //         tempMaskNameList.forEach(tempMaskName => {
-    //             MasksList.value.push(tempMaskName)
-    //         })
-    //     } catch (err: unknown) {
-    //         // 类型安全的错误转换
-    //         if (err instanceof Error) {
-    //             handleError(err)
-    //         } else {
-    //             handleError(String(err))
-    //         }
-    //     }
-    // }
 
     const SwitchImage = (id : number) => {
         pictureSelection.value = 2
@@ -131,12 +35,12 @@
         for (; MasksList.value.length > 0;) {
             MasksList.value.pop()
         }
-        const tempClassList : Array<string> = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
-        const tempMaskNameList : Array<string> = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
-        tempClassList.forEach(tempClass => {
+        const tempClassList : Array<string> | undefined = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
+        const tempMaskNameList : Array<string> | undefined = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
+        tempClassList?.forEach(tempClass => {
             CurrentAllClass.value.push(tempClass)
         })
-        tempMaskNameList.forEach(tempMaskName => {
+        tempMaskNameList?.forEach(tempMaskName => {
             MasksList.value.push(tempMaskName)
         })
     }

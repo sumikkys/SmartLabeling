@@ -1,6 +1,6 @@
 <script setup lang="ts">
   import { ref , watch } from 'vue'
-  import { selection } from '../../js/selection'
+  import { selection } from '../../ts/selection'
 
   let color = ref('#409eff')
 

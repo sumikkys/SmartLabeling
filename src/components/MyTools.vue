@@ -1,11 +1,10 @@
 <script setup lang="ts">
     import { ref , watch } from 'vue'
-    // import { ipcRenderer } from 'electron'
-    import axios, { AxiosError } from 'axios'
-    import { selection } from '../js/selection'
-    import { Dots, isDotMasked } from '../js/Dots'
-    import { Boxes } from '../js/Boxes'
-    import { imgPath, projectPath, projectName, Paths } from '../js/file'
+    import { selection } from '../ts/selection'
+    import { Dots, isDotMasked } from '../ts/Dots'
+    import { Boxes } from '../ts/Boxes'
+    import { imgPath, projectPath, projectName, Paths } from '../ts/file'
+    import { pictureSelection, CreateNewProject } from '../ts/telegram'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
@@ -20,93 +19,19 @@
     let UndoClass = ref('disabled')
     let RedoClass = ref('disabled')
 
-    const api = axios.create({
-        headers: {
-            'Content-Type': 'application/json'
-        }
-    })
-
-    const error = ref<string | null>(null)
-    // 定义增强型错误类型
-    type EnhancedError = 
-    | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
-    | Error                              // 标准错误对象
-    | string                             // 字符串类型的错误消息
-
-    // 统一错误处理函数
-    const handleError = (err: EnhancedError) => {
-    // 处理字符串类型错误
-        if (typeof err === 'string') {
-            error.value = err
-            console.error('API Error:', err)
-            return
-        }
-        // 处理Error对象
-        if (err instanceof Error) {
-        // 类型断言为AxiosError
-            const axiosError = err as AxiosError<{ message?: string }>
-            // 处理带响应的错误
-            if (axiosError.response) {
-                // 状态码映射
-                const statusMessage = (() => {
-                    switch (axiosError.response.status) {
-                    case 400: return '请求参数错误'
-                    case 404: return '资源不存在'
-                    case 415: return '不支持的媒体类型'
-                    case 500: return '服务器内部错误'
-                    default: return `请求失败 (${axiosError.response.status})`
-                    }
-                })()
-
-                error.value = axiosError.response.data?.message || statusMessage
-                    console.error('API Error:', {
-                        status: axiosError.response.status,
-                        message: axiosError.message,
-                        url: axiosError.config?.url,
-                        data: axiosError.response.data
-                })
-            } 
-            // 处理无响应的网络错误
-            else if (axiosError.request) {
-                error.value = '网络连接异常，请检查网络'
-                console.error('Network Error:', axiosError.message)
-            }
-            // 处理其他Error类型
-            else {
-                error.value = err.message
-                console.error('Runtime Error:', err)
-            }
-        }
-    }
-
-    // 创建新项目
-    const CreateNewProject = async () => {
-        try {
-            const response = await api.post('/api/create-project', {
-                "project_name": projectName.value,
-                "storage_path": projectPath.value
-            })
-            console.log(response.data)
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
     // 打开文件选择对话框并获取文件的绝对路径
     const filePath = ref<string | null>(null)
     const openFileDialog = async () => {
         try {
             // 调用主进程的文件选择功能
-            const path = await window.electron.openFileDialog()
-            if (path) {
-                filePath.value = path  // 获取到文件的绝对路径
-                imgPath.value = path
-                Paths.addPath(path)
+            let paths : Array<string> | undefined = await window.electron.openFileDialog()
+            if (paths) {
+                pictureSelection.value = 1
+                paths.forEach(path=>{
+                    filePath.value = path
+                    imgPath.value = path
+                    Paths.addPath(path)
+                })
             } else {
                 filePath.value = '未选择文件'
             }
@@ -115,7 +40,7 @@
         }
     }
 
-    // 打开输入文件名弹窗
+    // 打开输入项目名弹窗
     const promptRef = ref<{ show: () => Promise<string | null> }>()
     const showPrompt = async () => {
         const result = await promptRef.value?.show()
@@ -126,7 +51,7 @@
         } else {
             console.log('用户取消输入')
         }
-    };
+    }
 
     // 其实是打开文件夹并选取
     const createDirectory = async() => {
