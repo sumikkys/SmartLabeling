@@ -461,8 +461,8 @@
         imgURL.value = `file://${newVal}`
         isDotMasked.value = true
         draw_Image(imgURL.value)  // 重新加载并绘制新图片
-        await sendResetData()
         if (isSwitch.value) {
+          await sendResetData()
           await sendSwitchImage()
         }
       }

@@ -242,9 +242,10 @@
 
     watch(Paths.list_num, async(newVal) => {
         if (newVal && newVal !== 0) {
-            const tempPath = Paths.findPath(newVal - 1)?.split('\\').pop().split('/').pop()
+            const tempPath = Paths.findPath(newVal - 1)
             if (tempPath){
-                ImageList.value.push(tempPath)
+                const tempPathName = tempPath.split('\\').pop()?.split('/').pop() ?? "unknown"
+                ImageList.value.push(tempPathName)
             }
         }
     })
