@@ -1,10 +1,10 @@
 // telegram.ts
 import { ref } from 'vue'
 import axios, { AxiosError } from 'axios'
-import { imgPath, projectPath, projectName } from './file'
+import { imgPath, projectPath, projectName} from './file'
 
 // 判断是否是选择图片或上传图片
-export const pictureSelection = ref(1)
+export const isSwitch = ref(false)
 
 // 是否初始化加载
 export const initialized = ref(false)
@@ -94,10 +94,10 @@ export const checkBackendReady = () => {
 }
 
 // 发送图片
-export const sendImageData = async () => {
+export const sendImageData = async (path : string) => {
   try {
       const response = await api.post('/api/uploadimage',{
-        "image_path": imgPath.value,
+        "image_path": path,
         "project_name": projectName.value,
         "storage_path": projectPath.value,
       })

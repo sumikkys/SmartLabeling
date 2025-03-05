@@ -5,8 +5,8 @@
   import { Boxes } from '../ts/Boxes'
   import { imgPath, imgURL, projectPath, projectName } from '../ts/file'
   import { tempMaskMatrix } from '../ts/Masks'
-  import { api, handleError, pictureSelection } from '../ts/telegram'
-  import { checkBackendReady, sendImageData, sendSwitchImage } from '../ts/telegram'
+  import { api, handleError, isSwitch } from '../ts/telegram'
+  import { checkBackendReady, sendSwitchImage } from '../ts/telegram'
   import AnnotationSidebar from '../components/AnnotationSidebar.vue'
   import AwaitBackend from '../components/AwaitBackend.vue'
 
@@ -456,18 +456,15 @@
 
   watch(imgPath, async(newVal)=> {
       if (newVal != null) {
-        await sendResetData()
         Dots.resetDots()
         Boxes.resetBox()
-        if (pictureSelection.value === 1) {
-          await sendImageData()
-        }
-        else if (pictureSelection.value === 2) {
-          await sendSwitchImage()
-        }
         imgURL.value = `file://${newVal}`
         isDotMasked.value = true
         draw_Image(imgURL.value)  // 重新加载并绘制新图片
+        await sendResetData()
+        if (isSwitch.value) {
+          await sendSwitchImage()
+        }
       }
   })
 </script>

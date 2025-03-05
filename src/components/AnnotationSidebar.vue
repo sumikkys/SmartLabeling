@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
-    import { api, handleError, pictureSelection } from '../ts/telegram'
+    import { api, handleError, isSwitch } from '../ts/telegram'
     import { imgPath, projectPath, projectName, Paths } from '../ts/file'
     import { tempMaskMatrix } from '../ts/Masks'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
@@ -27,7 +27,7 @@
     CurrentClass.value = AllClass.value[0]
 
     const SwitchImage = (id : number) => {
-        pictureSelection.value = 2
+        isSwitch.value = true
         imgPath.value = Paths.findPath(id)
         for (; CurrentAllClass.value.length > 0;) {
             CurrentAllClass.value.pop()
@@ -234,13 +234,19 @@
         })
     });
 
-    watch(imgPath, async (newVal) => {
+    watch(imgPath, async(newVal) => {
         const imgName = newVal.split('\\').pop().split('/').pop()
         CurrentImageName.value = imgName
-        if (pictureSelection.value === 1) {
-            ImageList.value.push(imgName)
-        }
         await nextTick()
+    })
+
+    watch(Paths.list_num, async(newVal) => {
+        if (newVal && newVal !== 0) {
+            const tempPath = Paths.findPath(newVal - 1)?.split('\\').pop().split('/').pop()
+            if (tempPath){
+                ImageList.value.push(tempPath)
+            }
+        }
     })
 </script>
 

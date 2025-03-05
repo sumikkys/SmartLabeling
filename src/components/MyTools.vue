@@ -4,7 +4,7 @@
     import { Dots, isDotMasked } from '../ts/Dots'
     import { Boxes } from '../ts/Boxes'
     import { imgPath, projectPath, projectName, Paths } from '../ts/file'
-    import { pictureSelection, CreateNewProject } from '../ts/telegram'
+    import { isSwitch, CreateNewProject, sendImageData } from '../ts/telegram'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
@@ -26,12 +26,15 @@
             // 调用主进程的文件选择功能
             let paths : Array<string> | undefined = await window.electron.openFileDialog()
             if (paths) {
-                pictureSelection.value = 1
-                paths.forEach(path=>{
+                isSwitch.value = false
+                for (const path of paths) {
                     filePath.value = path
-                    imgPath.value = path
+                    if (Paths.list.length === 0) {
+                        imgPath.value = path
+                    }
                     Paths.addPath(path)
-                })
+                    await sendImageData(path)
+                }
             } else {
                 filePath.value = '未选择文件'
             }

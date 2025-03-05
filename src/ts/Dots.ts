@@ -40,7 +40,6 @@ export class Dots {
         if (this.dots_redo.length > 0) {
             this.isDotted_redo.value = true;
         }
-        this.getDots()
         return last_dot;
     }
 
@@ -55,7 +54,6 @@ export class Dots {
         if (this.dots.length > 0) {
             this.isDotted.value = true;
         }
-        this.getDots()
         return last_dot_redo;
     }
 

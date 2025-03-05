@@ -8,6 +8,7 @@ export const projectName = ref()
 
 export class Paths {
     static list : Array<{path: string, mask: Masks, class: Array<string>}> = [];
+    static list_num  = ref(0)
 
     static getPath() {
         this.list.forEach(temppath => {
@@ -21,6 +22,7 @@ export class Paths {
             mask: new Masks(),
             class: new Array<string>
         });
+        this.list_num.value++;
     }
 
     static findPath(id: number) {
