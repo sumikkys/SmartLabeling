@@ -290,11 +290,7 @@
         height: 100%;
         color: #000000;
         font: bold 2.5rem Arial, sans-serif;
-        border: 0.1rem #D3D3D3;
-        border-top-style: solid;
-        border-right-style: solid;
-        border-bottom-style: solid;
-        border-left-style: solid;
+        border: 0.1rem solid #D3D3D3;
         padding: 1.5rem;
         margin: 0rem;
         display: flex;

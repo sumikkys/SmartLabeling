@@ -18,6 +18,7 @@
     let searchQuery = ref('')
     let searchQueryImage = ref('')
     let AddOneClassName = ref('')
+    const classInput = ref<HTMLInputElement | null>(null)
 
     // 定义数据列表
     const ImageList = ref<Array<string>>([])
@@ -237,6 +238,13 @@
         })
     })
 
+    watch(showAddOneClass, async (newVal) => {
+        if (newVal) {
+            await nextTick()  // 等待DOM更新
+            classInput.value?.focus()
+        }
+    })
+
     watch(imgPath, async(newVal) => {
         const imgName = newVal.split('\\').pop().split('/').pop()
         CurrentImageName.value = imgName
@@ -269,17 +277,17 @@
             <span v-if="!CurrentImageName" class="noneImage">none</span>
             <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button>
         </div>
-            <div v-if="showSearchBar">
-                <div class="select-menu-Image">
-                    <div>
-                        <input class="search-Bar" v-model="searchQueryImage" type="text" placeholder="搜索Image"/>
-                        <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
-                    </div>
-                    <button class ="select-element" v-for="(item, index1) in ImageFilter" :key="index1" @click="selectionImage(item)">
-                        <span class="ClassElement">{{ item }}</span>
-                    </button>
+        <div v-if="showSearchBar">
+            <div class="select-menu-Image">
+                <div>
+                    <input class="search-Bar" v-model="searchQueryImage" type="text" placeholder="搜索Image"/>
+                    <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
                 </div>
+                <button class ="select-element" v-for="(item, index1) in ImageFilter" :key="index1" @click="selectionImage(item)">
+                    <span class="ClassElement">{{ item }}</span>
+                </button>
             </div>
+        </div>
       </li>
       <li class="Masksli">
         <div>已标注Masks</div>
@@ -299,7 +307,7 @@
             <button @click="showClass" class="MyClass"><MyClassIcon></MyClassIcon></button>
         </div>
         <div v-if="showAddOneClass" class="InputOneClass">
-            <input v-model="AddOneClassName" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="请输入Class">
+            <input v-model="AddOneClassName" ref="classInput" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="请输入Class">
         </div>
       </li>
       <li class="Box">
@@ -341,11 +349,7 @@
         height: 100%;
         color: #000000;
         font: bold 1.5rem Arial, sans-serif;
-        border: 0.1rem #D3D3D3;
-        border-top-style: solid;
-        border-right-style: solid;
-        border-bottom-style: solid;
-        border-left-style: solid;
+        border: 0.1rem solid #D3D3D3;
         padding: 1.5rem;
         margin: 0rem;
         display: flex;
@@ -408,6 +412,7 @@
         font: bold 1.4rem Arial, sans-serif;
     }
     .Box .SearchButton {
+        height: 1rem;
         position: absolute;
         right: 1rem;
         cursor: pointer;
@@ -440,7 +445,11 @@
     .Box .select-menu-Image .select-element{
         width: 100%;
         height: 20%;
-        border: 0.05rem solid #D3D3D3;
+        border: 0.1rem #D3D3D3;
+        border-top-style: none;
+        border-right-style: none;
+        border-bottom-style: solid;
+        border-left-style: none;
         background-color: #FFFFFF;
         box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
         transition: all 0.1s ease;
@@ -460,12 +469,15 @@
     .scroll-container {
         width: 30rem;
         height: 10rem;
+        padding: 0rem;
+        margin: 0rem;
         /* border: 1px solid #ccc; */
         overflow-y: auto;
     }
     .data-item {
-        padding: 1rem;
-        border-bottom: 0.1rem solid #eee;
+        padding: 0.5rem;
+        margin: 0rem;
+        border-bottom: 0.1rem solid #D3D3D3;
     }
     .Classli {
         position: relative;
@@ -530,6 +542,7 @@
         font: bold 1.5rem Arial, sans-serif;
     }
     .Box1 .ClassButton {
+        height: 1rem;
         position: absolute;
         right: 1rem;
         cursor: pointer;
