@@ -1,7 +1,8 @@
 import {ref} from 'vue';
 import { Dots } from './Dots'
 
-export const tempMaskMatrix = ref([[0]])
+export const isWindowChange = ref(false)
+export const tempMaskMatrix = ref<Array<Array<number>>>([])
 
 export class Masks {
     mask_list : Array<{mask_matrix: Array<Array<number>>, mask_id: string, mask_name: string}> = [];

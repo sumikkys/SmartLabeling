@@ -4,16 +4,10 @@
   import { Dots, isDotMasked } from '../ts/Dots'
   import { Boxes } from '../ts/Boxes'
   import { imgPath, imgURL, projectPath, projectName } from '../ts/file'
-  import { tempMaskMatrix } from '../ts/Masks'
+  import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
   import { api, handleError, isSwitch } from '../ts/telegram'
   import { checkBackendReady, sendSwitchImage } from '../ts/telegram'
-  import AnnotationSidebar from '../components/AnnotationSidebar.vue'
   import AwaitBackend from '../components/AwaitBackend.vue'
-
-  let pos = ref({
-    x: 0,
-    y: 0
-  })
 
   let send_pos = ref({
     x: 0,
@@ -21,13 +15,6 @@
   })
 
   let box_flag = false
-
-  let box = ref({
-      start_x: 0,
-      start_y: 0,
-      end_x: 0,
-      end_y: 0
-  })
 
   let send_box = ref({
       start_x: 0,
@@ -57,7 +44,7 @@
     canvas.width = canvas.clientWidth * window.devicePixelRatio
     canvas.height = canvas.clientHeight * window.devicePixelRatio
     const ctx = canvas.getContext('2d')
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    ctx?.scale(window.devicePixelRatio, window.devicePixelRatio)
 
     let img = document.getElementById("bg") as HTMLImageElement;
     img.src = imageSrc
@@ -69,8 +56,14 @@
       zoom_y = img.height / img.naturalHeight
       img_size_x = img.naturalWidth
       img_size_y = img.naturalHeight
-      ctx.beginPath()
-      tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+      console.log(pos_x,pos_y,zoom_x,zoom_y)
+      if (!isWindowChange || tempMaskMatrix.value.length === 0) {
+        tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+        console.log("chushihua")
+      }
+      else if (isWindowChange) {
+        drawMask(tempMaskMatrix.value)
+      }
     }
 
     canvas.addEventListener('mousedown', function(e: MouseEvent) {
@@ -78,42 +71,38 @@
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           return
         }
-        pos.value = {
-            x: e.offsetX,
-            y: e.offsetY
-        }
         send_pos.value = {
-            x: (pos.value.x - pos_x) / zoom_x,
-            y: (pos.value.y - pos_y) / zoom_y
+            x: (e.offsetX - pos_x) / zoom_x,
+            y: (e.offsetY - pos_y) / zoom_y
         }
         drawPoint(e)
         if (!Dots.isDotted.value) {
             Dots.isDotted.value = true
         }
       }
-      else if (selection.value === 2) {
+      else if (selection.value === 2 && !box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           return
         }
         box_flag = true;
-        box.value.start_x = e.offsetX
-        box.value.start_y = e.offsetY
+        send_box.value.start_x = (e.offsetX - pos_x) / zoom_x
+        send_box.value.start_y = (e.offsetY - pos_y) / zoom_y
       }
     })
 
     canvas.addEventListener('mouseup', function(e: MouseEvent) {
-      if (selection.value === 2) {
-        if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
+      if (selection.value === 2 && box_flag) {
+        if ((e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) 
+          || (e.offsetX-send_box.value.start_x*zoom_x-pos_x <= 1 && e.offsetY-send_box.value.start_y*zoom_y-pos_y <= 1)) {
+          box_flag = false
+          ctx.beginPath()
+          ctx.clearRect(0,0,canvas.width,canvas.height)
           return
         }
         box_flag = false
-        box.value.end_x = e.offsetX
-        box.value.end_y = e.offsetY
-        send_box.value.start_x = (box.value.start_x - pos_x) / zoom_x
-        send_box.value.start_y = (box.value.start_y - pos_y) / zoom_y
-        send_box.value.end_x = (box.value.end_x - pos_x) / zoom_x
-        send_box.value.end_y = (box.value.end_y - pos_y) / zoom_y
-        Boxes.setBox(box.value.start_x, box.value.start_y, box.value.end_x, box.value.end_y)
+        send_box.value.end_x = (e.offsetX - pos_x) / zoom_x
+        send_box.value.end_y = (e.offsetY - pos_y) / zoom_y
+        Boxes.setBox(send_box.value.start_x, send_box.value.start_y, send_box.value.end_x, send_box.value.end_y)
         sendBoxData()
       }
     })
@@ -121,6 +110,7 @@
     canvas.addEventListener('mousemove', function(e: MouseEvent) {
       if (selection.value === 2 && box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
+          box_flag = false
           return
         }
         drawBox(e)
@@ -136,7 +126,7 @@
     const canvas = myCanvas.value
     const ctx = canvas.getContext('2d')
     ctx.beginPath()
-    if (Dots.posIsDotted(e.offsetX, e.offsetY) == true) {
+    if (Dots.posIsDotted(send_pos.value.x, send_pos.value.y) === true) {
       return
     }
     ctx.arc(e.offsetX, e.offsetY, 5, 0, 2 * Math.PI)
@@ -144,12 +134,12 @@
     if (isDotMasked.value) {
       ctx.fillStyle = '#EE00EE'
       ctx.fill()
-      Dots.addDot(e.offsetX, e.offsetY, 0)
+      Dots.addDot(send_pos.value.x, send_pos.value.y, 0)
     } 
     else {
       ctx.fillStyle = '#00BFFF'
       ctx.fill()
-      Dots.addDot(e.offsetX, e.offsetY, 1)
+      Dots.addDot(send_pos.value.x, send_pos.value.y, 1)
     }
     sendPointData()
   }
@@ -159,7 +149,7 @@
     const canvas = myCanvas.value
     const ctx = canvas.getContext('2d')
     ctx.beginPath()
-    ctx.arc(x, y, 5, 0, 2 * Math.PI)
+    ctx.arc(x*zoom_x+pos_x, y*zoom_y+pos_y, 5, 0, 2 * Math.PI)
     ctx.globalAlpha = 1
     if (dot_type == 0) {
       ctx.fillStyle = '#EE00EE'
@@ -176,8 +166,8 @@
     let last_dot = Dots.undoDot()
     Dots.operation.value = 0
     if (last_dot) {
-      send_pos.value.x = (last_dot.x - pos_x) / zoom_x
-      send_pos.value.y = (last_dot.y - pos_y) / zoom_y
+      send_pos.value.x = last_dot.x
+      send_pos.value.y = last_dot.y
     }
     sendUndoPointData()
   }
@@ -187,8 +177,8 @@
     let last_dot_redo = Dots.redoDot()
     Dots.operation.value = 0
     if (last_dot_redo) {
-      send_pos.value.x = (last_dot_redo.x - pos_x) / zoom_x
-      send_pos.value.y = (last_dot_redo.y - pos_y) / zoom_y
+      send_pos.value.x = last_dot_redo.x
+      send_pos.value.y = last_dot_redo.y
     }
     sendRedoPointData()
   }
@@ -277,7 +267,8 @@
     ctx.strokeStyle = '#EE00EE'
     ctx.lineWidth = 2
     ctx.globalAlpha = 1
-    ctx.strokeRect(box.value.start_x, box.value.start_y, e.offsetX - box.value.start_x, e.offsetY - box.value.start_y)
+    ctx.strokeRect(send_box.value.start_x*zoom_x+pos_x, send_box.value.start_y*zoom_y+pos_y,
+       e.offsetX-send_box.value.start_x*zoom_x-pos_x, e.offsetY-send_box.value.start_y*zoom_y-pos_y)
   }
 
   // 撤销框
@@ -404,7 +395,8 @@
     ctx.strokeStyle = '#EE00EE'
     ctx.lineWidth = 2
     ctx.globalAlpha = 1
-    ctx.strokeRect(Boxes.box.start_x, Boxes.box.start_y, Boxes.box.end_x - Boxes.box.start_x, Boxes.box.end_y - Boxes.box.start_y)
+    ctx.strokeRect(Boxes.box.start_x*zoom_x+pos_x, Boxes.box.start_y*zoom_y+pos_y, 
+        (Boxes.box.end_x-Boxes.box.start_x)*zoom_x, (Boxes.box.end_y-Boxes.box.start_y)*zoom_y)
     Dots.dots.forEach(dot => {
       drawPointByXY(dot.x, dot.y, dot.dot_type)
     })
@@ -421,6 +413,9 @@
           ctx.beginPath()
           ctx.arc(i*zoom_x+pos_x, j*zoom_y+pos_y, 1, 0 ,2 * Math.PI)
           ctx.fill()
+        }
+        else if (masks[j][i] === 0) {
+          tempMaskMatrix.value[j][i] = 0
         }
       }
     }
@@ -454,13 +449,20 @@
     }
   })
 
+  watch(isWindowChange, async(newVal) => {
+    if (newVal) {
+      draw_Image(imgURL.value)  // 重新加载并绘制图片
+      isWindowChange.value = false
+    }
+  })
+
   watch(imgPath, async(newVal)=> {
       if (newVal != null) {
         Dots.resetDots()
         Boxes.resetBox()
         imgURL.value = `file://${newVal}`
         isDotMasked.value = true
-        draw_Image(imgURL.value)  // 重新加载并绘制新图片
+        draw_Image(imgURL.value)  // 重新加载并绘制图片
         if (isSwitch.value) {
           await sendResetData()
           await sendSwitchImage()
@@ -470,34 +472,52 @@
 </script>
 
 <template>
-  <div style="display: flex; flex-direction: row;">
+  <div class="myContent">
     <div class="content">
       <canvas ref="myCanvas" class="content-canvas"></canvas>
       <img :src=imgURL id="bg" alt="请上传图片" />
     </div>
-    <AnnotationSidebar></AnnotationSidebar>
+    <AwaitBackend></AwaitBackend>
   </div>
-  <AwaitBackend></AwaitBackend>
 </template>
 
 <style scoped>
+    .myContent {
+        height: 100%;
+        border: 0.1rem #D3D3D3;
+        border-top-style: solid;
+        border-right-style: none;
+        border-bottom-style: solid;
+        border-left-style: none;
+        padding: 1.5rem;
+        margin: 0rem;
+        display: flex;
+        list-style-type: none;
+        flex-direction: column;
+        justify-content: start;
+        align-items: center;
+        text-align: center;
+        position: relative;
+    }
+
     .content {
+        width: 100%;
+        height: 100%;
+        padding: 0rem;
+        margin: 0rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 70vh;
-        width: 70vw;
-        padding: 0rem;
         position: relative;
-        top: 5vh;
+        flex: 1;
     }
 
     .content .content-canvas {
         width: 100%;
         height: 100%;
-        margin: 0;
-        border: 1px solid #CCCCCC;
+        padding: 0rem;
+        margin: 0rem;
         z-index: 1;
         position: absolute;
     }
@@ -507,7 +527,9 @@
         height: auto;
         max-width: 100%;
         max-height: 100%;
+        object-fit: contain;
         margin: 0;
+        z-index: 0;
         position: absolute;
     }
 </style>

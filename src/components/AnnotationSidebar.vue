@@ -96,7 +96,8 @@
                 "operation": 3
             })
             console.log(response.data)
-            AllClass.value.push(AddOneClassName.value);
+            AllClass.value.push(AddOneClassName.value)
+            AddOneClassName.value = ''      // 清除输入框内的文字残留
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -163,51 +164,53 @@
     }
 
     const prevImage =()=> {
-        const currentIndex = ImageList.value.indexOf(CurrentImageName.value);
+        const currentIndex = ImageList.value.indexOf(CurrentImageName.value)
         if (currentIndex > 0) {
-            CurrentImageName.value = ImageList.value[currentIndex - 1];
+            CurrentImageName.value = ImageList.value[currentIndex - 1]
         } else {
-            CurrentImageName.value = ImageList.value[ImageList.value.length - 1];
+            CurrentImageName.value = ImageList.value[ImageList.value.length - 1]
         }
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
-    };
+    }
     
     const nextImage = () => {
-        const currentIndex = ImageList.value.indexOf(CurrentImageName.value);
+        const currentIndex = ImageList.value.indexOf(CurrentImageName.value)
         if (currentIndex < ImageList.value.length - 1) {
-            CurrentImageName.value = ImageList.value[currentIndex + 1];
+            CurrentImageName.value = ImageList.value[currentIndex + 1]
         } else {
-            CurrentImageName.value = ImageList.value[0];
+            CurrentImageName.value = ImageList.value[0]
         }
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
-    };
+    }
 
     const showBar = () => {
-        showSearchBar.value = !showSearchBar.value;
+        showSearchBar.value = !showSearchBar.value
     }
     const showClass =()=>{
-        showAllClass.value =!showAllClass.value;
+        showAllClass.value =!showAllClass.value
     }
     const showSelectBar =()=> {
-        showSelect.value = !showSelect.value;
+        showSelect.value = !showSelect.value
     }
     const selectionOption =(option:string)=> {
-        CurrentClass.value = option;
-        showSelect.value = !showSelect.value;
+        CurrentClass.value = option
+        showSelect.value = !showSelect.value
+        searchQuery.value = ''
     }
 
     const selectionImage =(option:string)=> {
-        CurrentImageName.value = option;
+        CurrentImageName.value = option
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
-        showSearchBar.value = !showSearchBar.value;
+        showSearchBar.value = !showSearchBar.value
+        searchQueryImage.value = ''
     }
 
     const AddOneClass =()=>{
-        showAddOneClass.value = !showAddOneClass.value;
+        showAddOneClass.value = !showAddOneClass.value
     }
 
     const handleConfirm = () => {
-        showAddOneClass.value = !showAddOneClass.value;
+        showAddOneClass.value = !showAddOneClass.value
         if(!AllClass.value.includes(AddOneClassName.value)){
             sendAddCategoryAnnotation(AddOneClassName.value)
         }
@@ -224,15 +227,15 @@
     // 这里是搜索栏功能实现
     const AllClassFilter = computed(() => {
         return AllClass.value.filter((item) => {
-            return item.toLowerCase().includes(searchQuery.value.toLowerCase());
-        });
-    });
-
-    const ImageFilter =computed(()=>{
-        return ImageList.value.filter((item) =>{
-            return item.toLowerCase().includes((searchQueryImage.value.toLowerCase()));
+            return item.toLowerCase().includes(searchQuery.value.toLowerCase())
         })
-    });
+    })
+
+    const ImageFilter = computed(()=>{
+        return ImageList.value.filter((item) =>{
+            return item.toLowerCase().includes((searchQueryImage.value.toLowerCase()))
+        })
+    })
 
     watch(imgPath, async(newVal) => {
         const imgName = newVal.split('\\').pop().split('/').pop()
@@ -264,15 +267,17 @@
         <div>
             <span class="currentImage">{{ CurrentImageName }}</span>
             <span v-if="!CurrentImageName" class="noneImage">none</span>
-            <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button></div>
+            <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button>
+        </div>
             <div v-if="showSearchBar">
                 <div class="select-menu-Image">
                     <div>
-                    <input class="search-Bar" v-model = "searchQueryImage" type="text" placeholder="搜索Image"/>
-                </div>
-                <button class ="select-element" v-for="(item, index1) in ImageFilter" :key="index1" @click="selectionImage(item)">
-                    <span class="ClassElement">{{ item }}</span>
-                </button>
+                        <input class="search-Bar" v-model="searchQueryImage" type="text" placeholder="搜索Image"/>
+                        <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
+                    </div>
+                    <button class ="select-element" v-for="(item, index1) in ImageFilter" :key="index1" @click="selectionImage(item)">
+                        <span class="ClassElement">{{ item }}</span>
+                    </button>
                 </div>
             </div>
       </li>
@@ -294,7 +299,7 @@
             <button @click="showClass" class="MyClass"><MyClassIcon></MyClassIcon></button>
         </div>
         <div v-if="showAddOneClass" class="InputOneClass">
-            <input v-model="AddOneClassName" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="">
+            <input v-model="AddOneClassName" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="请输入Class">
         </div>
       </li>
       <li class="Box">
@@ -308,14 +313,13 @@
       </li>
       <li class="TipBox">
         <div class="Box1">
-            <div>
-                <span class="CurrentClass">{{ CurrentClass }}</span>
-                <button class="ClassButton ArrowButton" @click="showSelectBar"><MyRightImage v-if="!showSelect"></MyRightImage><MyUpIcon v-else></MyUpIcon></button>
-            </div>
+            <span class="CurrentClass">{{ CurrentClass }}</span>
+            <button class="ClassButton ArrowButton" @click="showSelectBar"><MyRightImage v-if="!showSelect"></MyRightImage><MyUpIcon v-else></MyUpIcon></button>
             <div v-if="showSelect" >
                 <div class="select-menu">
                     <div>
-                        <input v-model = "searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
+                        <input v-model="searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
+                        <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
                     </div>
                     <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionOption(item)">
                         <span class="ClassElement">{{ item }}</span>
@@ -334,15 +338,16 @@
 
 <style scoped>
     .MyAnothertools {
+        height: 100%;
         color: #000000;
         font: bold 1.5rem Arial, sans-serif;
-        width: 15vw;
-        height: 70vh;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 1.5rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
+        border: 0.1rem #D3D3D3;
+        border-top-style: solid;
+        border-right-style: solid;
+        border-bottom-style: solid;
+        border-left-style: solid;
         padding: 1.5rem;
-        margin-left: 3rem;
+        margin: 0rem;
         display: flex;
         list-style-type: none;
         flex-direction: column;
@@ -384,8 +389,8 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
-        border-radius: 1.1rem;
-        border: 0.2rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 90%;
         margin: 1rem;
@@ -411,13 +416,12 @@
         position: absolute;
         top:  100%;
         left: 0;
-        width: 90%;
-        height: 15rem;
+        width: 100%;
+        height: 14rem;
         background-color: #FFFFFF;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 1.1rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
-        padding: 0.5rem 1rem;
+        border: 0.1rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        padding: 0rem;
         z-index: 1;
         transition: all 0.3s ease;
         overflow-y: auto;
@@ -427,10 +431,11 @@
         width: 100%;
         height: 100%;
         background-color: #FFFFFF;
+        border-radius: 0.5rem;
         border: none;
         outline: none;
-        margin: 1rem;
-        padding: 0;
+        margin: 0.8rem;
+        padding: 0rem;
     }
     .Box .select-menu-Image .select-element{
         width: 100%;
@@ -488,13 +493,13 @@
     .Classli .InputOneClass {
         position: absolute;
         bottom: 100%;
-        left: 1vw;
+        left: 0.5vw;
     }
     .Classli .InputContent {
         width: 12vw;
         height: 2rem;
-        border-radius: 1rem;
-        border: 0.2rem solid #409eff;
+        border-radius: 0.6rem;
+        border: 0.1rem solid #D3D3D3;
     }
     .Tipli {
         display: flex;
@@ -511,8 +516,8 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
-        border-radius: 1.1rem;
-        border: 0.2rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 90%;
         margin: 1rem 1rem 1rem 0rem;
@@ -533,13 +538,12 @@
         position: absolute;
         bottom: 100%;
         left: 0;
-        width: 90%;
+        width: 100%;
         height: 15rem;
         background-color: #FFFFFF;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 1.1rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
-        padding: 0.5rem 1rem;
+        border: 0.1rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        padding: 0rem;
         z-index: 1;
         transition: all 0.3s ease;
         overflow-y: auto;
@@ -551,7 +555,7 @@
         background-color: #FFFFFF;
         border: none;
         outline: none;
-        margin: 1rem;
+        margin: 0.8rem;
         padding: 0;
     }
     .select-menu .select-element {
@@ -599,7 +603,7 @@
         border-radius: 0.5rem;
         cursor: pointer;
         color: #FFFFFF;
-        font: bold 1.4rem Arial, sans-serif;
+        font: bold 1.2rem Arial, sans-serif;
         height: 3rem;
         width: 100%;
     }
