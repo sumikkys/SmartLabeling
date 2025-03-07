@@ -56,10 +56,8 @@
       zoom_y = img.height / img.naturalHeight
       img_size_x = img.naturalWidth
       img_size_y = img.naturalHeight
-      console.log(pos_x,pos_y,zoom_x,zoom_y)
       if (!isWindowChange || tempMaskMatrix.value.length === 0) {
         tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
-        console.log("chushihua")
       }
       else if (isWindowChange) {
         drawMask(tempMaskMatrix.value)

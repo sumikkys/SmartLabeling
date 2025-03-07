@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref } from 'vue'
 import { Masks } from './Masks'
 
 export const imgPath = ref()
@@ -8,11 +8,11 @@ export const projectName = ref()
 
 export class Paths {
     static list : Array<{path: string, mask: Masks, class: Array<string>}> = [];
-    static list_num  = ref(0)
+    static list_num  = ref(0);
 
     static getPath() {
         this.list.forEach(temppath => {
-            console.log(temppath)
+            console.log(temppath);
         });
     }
 
@@ -25,10 +25,6 @@ export class Paths {
         this.list_num.value++;
     }
 
-    static findPath(id: number) {
-        return this.list.at(id)?.path;
-    }
-
     static addMaskstoPath(path_id: number, maskId: string, maskName: string) {
         return this.list.at(path_id)?.mask.addMasks(maskId, maskName);
     }
@@ -37,7 +33,11 @@ export class Paths {
         this.list.at(path_id)?.class.push(class_name);
     }
 
-    static getAllPathsfromPaths() {
+    static getPathfromPath(id: number) {
+        return this.list.at(id)?.path;
+    }
+
+    static getAllPathsfromPath() {
         const filename_list = new Array();
         for (let i = 0; i < this.list.length; i++) {
             filename_list.push(i);
@@ -45,12 +45,12 @@ export class Paths {
         return filename_list;
     }
 
-    static getMaskfromPath(path_id: number, index_id: number) {
-        return this.list.at(path_id)?.mask.getMaskfromMaskList(index_id);
+    static getMasksfromPath(path_id: number) {
+        return this.list.at(path_id)?.mask.getMaskList();
     }
 
-    static getAllClassfromPath(path_id: number) {
-        return this.list.at(path_id)?.class;
+    static getMaskMatrixfromPath(path_id: number, index_id: number) {
+        return this.list.at(path_id)?.mask.getMaskfromMaskList(index_id);
     }
 
     static getAllMaskNamefromPath(path_id: number) {
@@ -61,8 +61,16 @@ export class Paths {
         return this.list.at(path_id)?.mask.getMaskIdfromMaskList(index_id);
     }
 
+    static getAllClassfromPath(path_id: number) {
+        return this.list.at(path_id)?.class;
+    }
+
     static removeMaskfromMasks(path_id: number, index_id: number) {
         this.list.at(path_id)?.mask.removeMaskfromMaskList(index_id);
+    }
+
+    static removeClassfromClasses(path_id: number, index_id: number) {
+        this.list.at(path_id)?.class.splice(index_id, 1);
     }
 }
 

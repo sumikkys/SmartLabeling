@@ -14,9 +14,14 @@ export class Masks {
             mask_name: maskName
         });
         Dots.operation.value = 2;
+        console.log(tempMaskMatrix)
         this.mask_list.forEach(element => {
             console.log(element.mask_id);
         });
+    }
+
+    getMaskList() {
+        return this.mask_list;
     }
 
     getMaskfromMaskList(index_id: number) {

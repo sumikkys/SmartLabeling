@@ -25,24 +25,40 @@
     const MasksList = ref<Array<string>>([])
     const AllClass = ref<Array<string>>([])
     const CurrentAllClass = ref<Array<string>>([])
-    CurrentClass.value = AllClass.value[0]
+    const ClassColor = ref<Array<string>>([
+        "#FF0000",
+        "#FF8C00",
+        "#FFD700",
+        "#008000",
+        "#9400D3"
+    ])
 
     const SwitchImage = (id : number) => {
         isSwitch.value = true
-        imgPath.value = Paths.findPath(id)
-        for (; CurrentAllClass.value.length > 0;) {
-            CurrentAllClass.value.pop()
-        }
+        imgPath.value = Paths.getPathfromPath(id)
+        updateMasksList()
+        updateCurrentAllClass()
+    }
+
+    const updateMasksList = () => {
         for (; MasksList.value.length > 0;) {
             MasksList.value.pop()
         }
-        const tempClassList : Array<string> | undefined = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
         const tempMaskNameList : Array<string> | undefined = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
-        tempClassList?.forEach(tempClass => {
-            CurrentAllClass.value.push(tempClass)
-        })
-        tempMaskNameList?.forEach(tempMaskName => {
+            tempMaskNameList?.forEach(tempMaskName => {
             MasksList.value.push(tempMaskName)
+        })
+    }
+
+    const updateCurrentAllClass = () => {
+        for (; CurrentAllClass.value.length > 0;) {
+            CurrentAllClass.value.pop()
+        }
+        const tempClassList : Array<string> | undefined = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
+        tempClassList?.forEach(tempClass => {
+            if(!CurrentAllClass.value.includes(tempClass)) {
+                CurrentAllClass.value.push(tempClass)
+            }
         })
     }
 
@@ -57,9 +73,9 @@
                 }
             })
             console.log(response.data)
-            const maskName = CurrentClass.value+"_"+ImageList.value.length
+            const maskName = CurrentClass.value+"_"+response.data.mask_id?.split('_').pop()
             Paths.addMaskstoPath(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
-            MasksList.value.push(maskName)
+            updateMasksList()
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -79,7 +95,9 @@
             })
             console.log(response.data)
             Paths.removeMaskfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
-            MasksList.value.splice(index, 1)
+            Paths.removeClassfromClasses(ImageList.value.indexOf(CurrentImageName.value), index)
+            updateMasksList()
+            updateCurrentAllClass()
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -128,6 +146,7 @@
         }
     }
 
+    // 导出当前图片Mask
     const ExportCurrentImage = async () => {
         try {
             const response = await api.post('/api/export', {
@@ -146,10 +165,11 @@
         }
     }
 
+    // 导出所有图片Mask
     const ExoprtAllImage = async () => {
         try {
             const response = await api.post('/api/export', {
-                "image_id": Paths.getAllPathsfromPaths(),
+                "image_id": Paths.getAllPathsfromPath(),
                 "project_name": projectName.value,
                 "project_path": projectPath.value
             })
@@ -215,13 +235,13 @@
         if(!AllClass.value.includes(AddOneClassName.value)){
             sendAddCategoryAnnotation(AddOneClassName.value)
         }
-    };
+    }
 
     const AddClassToMask =()=> {
         if(!CurrentAllClass.value.includes(CurrentClass.value)){
-            CurrentAllClass.value.push(CurrentClass.value)
-            Paths.addClasstoPath(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
+            CurrentAllClass.value.push(CurrentClass.value)   
         }
+        Paths.addClasstoPath(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
         sendAddMaskAnnotation()
     }
 
@@ -240,7 +260,7 @@
 
     watch(showAddOneClass, async (newVal) => {
         if (newVal) {
-            await nextTick()  // 等待DOM更新
+            await nextTick()  // 等待更新
             classInput.value?.focus()
         }
     })
@@ -253,7 +273,7 @@
 
     watch(Paths.list_num, async(newVal) => {
         if (newVal && newVal !== 0) {
-            const tempPath = Paths.findPath(newVal - 1)
+            const tempPath = Paths.getPathfromPath(newVal - 1)
             if (tempPath){
                 const tempPathName = tempPath.split('\\').pop()?.split('/').pop() ?? "unknown"
                 ImageList.value.push(tempPathName)
@@ -294,8 +314,8 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div class="data-item" v-for="(item, index) in MasksList" :key="index">{{ item }}
-                <button @click="sendRemoveMaskAnnotation(index)" class="MyClass">-</button>
+            <div class="data-item" v-for="(item, index) in MasksList" :key="index" style="justify-content: space-around;">{{ item }}
+                <button @click="sendRemoveMaskAnnotation(index)" class="MyMask">-</button>
             </div>
         </div>
       </li>
@@ -312,7 +332,10 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div v-if="!showAllClass" class="data-item" v-for="(item, index) in CurrentAllClass" :key="index">{{ item }}</div>
+            <div v-if="!showAllClass" class="data-item" v-for="(item, index) in CurrentAllClass" :key="index" style="padding-left: 2rem;">
+                <span class="ClassColor" :style="{ backgroundColor: ClassColor[index] }"></span>&nbsp;&nbsp;
+                <span>{{ item }}</span>
+            </div>
             <div v-else class="data-item" v-for="(item, index1) in AllClass" :key="index1">{{ item }}</div>
         </div>
       </li>
@@ -478,6 +501,25 @@
         padding: 0.5rem;
         margin: 0rem;
         border-bottom: 0.1rem solid #D3D3D3;
+        display: flex;
+        justify-content: start;
+        vertical-align: baseline;
+    }
+    .data-item .MyMask {
+        width: 2rem;
+        height: 2rem;
+        background-color: #FFFFFF;
+        color: #000000;
+        font: bold 1.5rem Arial, sans-serif;
+        border: 0.1rem solid #000000;
+        border-radius: 0.5rem;
+        text-align: top;
+        cursor: pointer;
+    }
+    .data-item .ClassColor {
+        width: 1.5rem;
+        height: 1.5rem;
+        border: none;
     }
     .Classli {
         position: relative;
