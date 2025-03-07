@@ -463,7 +463,7 @@
         draw_Image(imgURL.value)  // 重新加载并绘制图片
         if (isSwitch.value) {
           await sendResetData()
-          await sendSwitchImage()
+          sendSwitchImage()
         }
       }
   })
