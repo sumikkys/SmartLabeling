@@ -1,10 +1,11 @@
 <script setup lang="ts">
     import { ref , watch } from 'vue'
-    import { selection } from '../ts/selection'
+    import { selection } from '../ts/Selection'
     import { Dots, isDotMasked } from '../ts/Dots'
     import { Boxes } from '../ts/Boxes'
-    import { imgPath, projectPath, projectName, Paths } from '../ts/file'
-    import { isSwitch, CreateNewProject, sendImageData } from '../ts/telegram'
+    import { imgPath, myFiles } from '../ts/Files'
+    import { projectPath, projectName } from '../ts/Projects'
+    import { isSwitch, CreateNewProject, sendImageData } from '../ts/Telegram'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
@@ -30,10 +31,10 @@
                 isSwitch.value = false
                 for (const path of paths) {
                     filePath.value = path
-                    if (Paths.list.length === 0) {
+                    if (myFiles.list.value.length === 0) {
                         imgPath.value = path
                     }
-                    Paths.addPath(path)
+                    myFiles.addPathtoPathList(path)
                     await sendImageData(path)
                 }
             } else {

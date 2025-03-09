@@ -1,6 +1,6 @@
 <script setup lang="ts">
     import { onMounted, ref, watch } from 'vue'
-    import { initialized } from '../ts/telegram'
+    import { initialized } from '../ts/Telegram'
 
     const isVisible = ref(true)
     const isVisibleCanvas = ref(true)

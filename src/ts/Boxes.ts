@@ -1,4 +1,4 @@
-// isBoxed.js
+// Boxes.js
 import { ref } from 'vue'
 
 export class Boxes {

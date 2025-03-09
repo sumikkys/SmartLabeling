@@ -1,7 +1,8 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
-    import { api, handleError, isSwitch } from '../ts/telegram'
-    import { imgPath, projectPath, projectName, Paths } from '../ts/file'
+    import { api, handleError, isSwitch } from '../ts/Telegram'
+    import { imgPath, myFiles } from '../ts/Files'
+    import { projectPath, projectName } from '../ts/Projects'
     import { tempMaskMatrix } from '../ts/Masks'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
     import MyRightImage from './icons/MyRightImageIcon.vue'
@@ -22,9 +23,9 @@
 
     // 定义数据列表
     const ImageList = ref<Array<string>>([])
-    const MasksList = ref<Array<string>>([])
+    const MasksList = computed(() => myFiles.getAllMaskNamefromPathList(ImageList.value.indexOf(CurrentImageName.value)))
+    const CurrentAllClass = computed(() => myFiles.getAllClassNamefromPathList(ImageList.value.indexOf(CurrentImageName.value)))
     const AllClass = ref<Array<string>>([])
-    const CurrentAllClass = ref<Array<string>>([])
     const ClassColor = ref<Array<string>>([
         "#FF0000",
         "#FF8C00",
@@ -35,31 +36,7 @@
 
     const SwitchImage = (id : number) => {
         isSwitch.value = true
-        imgPath.value = Paths.getPathfromPath(id)
-        updateMasksList()
-        updateCurrentAllClass()
-    }
-
-    const updateMasksList = () => {
-        for (; MasksList.value.length > 0;) {
-            MasksList.value.pop()
-        }
-        const tempMaskNameList : Array<string> | undefined = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
-            tempMaskNameList?.forEach(tempMaskName => {
-            MasksList.value.push(tempMaskName)
-        })
-    }
-
-    const updateCurrentAllClass = () => {
-        for (; CurrentAllClass.value.length > 0;) {
-            CurrentAllClass.value.pop()
-        }
-        const tempClassList : Array<string> | undefined = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
-        tempClassList?.forEach(tempClass => {
-            if(!CurrentAllClass.value.includes(tempClass)) {
-                CurrentAllClass.value.push(tempClass)
-            }
-        })
+        imgPath.value = myFiles.getPathfromPathList(id)
     }
 
     // 增加mask
@@ -74,8 +51,8 @@
             })
             console.log(response.data)
             const maskName = CurrentClass.value+"_"+response.data.mask_id?.split('_').pop()
-            Paths.addMaskstoPath(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
-            updateMasksList()
+            myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
+            myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -87,17 +64,16 @@
     }
 
     // 删除mask
-    const sendRemoveMaskAnnotation = async (index : number) => {
+    const sendRemoveMaskAnnotation = async (index: number, item: string) => {
         try {
             const response = await api.post('/api/annotation-tools/prompt', {
                 "operation": 1,
-                "mask_id": Paths.getMaskIdfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
+                "mask_id": myFiles.getMaskIdfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
             })
             console.log(response.data)
-            Paths.removeMaskfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
-            Paths.removeClassfromClasses(ImageList.value.indexOf(CurrentImageName.value), index)
-            updateMasksList()
-            updateCurrentAllClass()
+            const className = item.substring(0, item.lastIndexOf("_"))
+            myFiles.removeMaskfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
+            myFiles.removeClassfromPathList(ImageList.value.indexOf(CurrentImageName.value), className)
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -128,11 +104,11 @@
     }
 
     // 增加类别
-    const sendAddCategoryAnnotation = async (class_name : string) => {
+    const sendAddCategoryAnnotation = async () => {
         try {
             const response = await api.post('/api/annotation-tools/prompt', {
                 "operation": 4,
-                "class_name": class_name
+                "class_name": AddOneClassName.value
             })
             console.log(response.data)
             sendGetCategoryAnnotation()
@@ -169,7 +145,7 @@
     const ExoprtAllImage = async () => {
         try {
             const response = await api.post('/api/export', {
-                "image_id": Paths.getAllPathsfromPath(),
+                "image_id": myFiles.getAllPathIdsfromPathList(),
                 "project_name": projectName.value,
                 "project_path": projectPath.value
             })
@@ -233,16 +209,8 @@
     const handleConfirm = () => {
         showAddOneClass.value = !showAddOneClass.value
         if(!AllClass.value.includes(AddOneClassName.value)){
-            sendAddCategoryAnnotation(AddOneClassName.value)
+            sendAddCategoryAnnotation()
         }
-    }
-
-    const AddClassToMask =()=> {
-        if(!CurrentAllClass.value.includes(CurrentClass.value)){
-            CurrentAllClass.value.push(CurrentClass.value)   
-        }
-        Paths.addClasstoPath(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
-        sendAddMaskAnnotation()
     }
 
     // 这里是搜索栏功能实现
@@ -271,9 +239,9 @@
         await nextTick()
     })
 
-    watch(Paths.list_num, async(newVal) => {
+    watch(myFiles.list_num, async(newVal) => {
         if (newVal && newVal !== 0) {
-            const tempPath = Paths.getPathfromPath(newVal - 1)
+            const tempPath = myFiles.getPathfromPathList(newVal - 1)
             if (tempPath){
                 const tempPathName = tempPath.split('\\').pop()?.split('/').pop() ?? "unknown"
                 ImageList.value.push(tempPathName)
@@ -315,7 +283,7 @@
       <li class="Box">
         <div class = "scroll-container">
             <div class="data-item" v-for="(item, index) in MasksList" :key="index" style="justify-content: space-around;">{{ item }}
-                <button @click="sendRemoveMaskAnnotation(index)" class="MyMask">-</button>
+                <button @click="sendRemoveMaskAnnotation(index, item)" class="MyMask">-</button>
             </div>
         </div>
       </li>
@@ -358,7 +326,7 @@
                 </div>
             </div>
         </div>
-        <button class="AddClass" @click="AddClassToMask">+</button>
+        <button class="AddClass" @click="sendAddMaskAnnotation">+</button>
       </li>
       <li class="Exportli">
         <button class="Exportlabeldatabutton" @click="ExportCurrentImage">导出当前图片</button>

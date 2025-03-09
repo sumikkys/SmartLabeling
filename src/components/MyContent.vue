@@ -1,12 +1,13 @@
 <script setup lang="ts">
   import { ref, watch, onMounted } from 'vue'
-  import { selection } from '../ts/selection'
+  import { selection } from '../ts/Selection'
   import { Dots, isDotMasked } from '../ts/Dots'
   import { Boxes } from '../ts/Boxes'
-  import { imgPath, imgURL, projectPath, projectName } from '../ts/file'
+  import { imgPath, imgURL } from '../ts/Files'
+  import { projectPath, projectName } from '../ts/Projects'
   import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
-  import { api, handleError, isSwitch } from '../ts/telegram'
-  import { checkBackendReady, sendSwitchImage } from '../ts/telegram'
+  import { api, handleError, isSwitch } from '../ts/Telegram'
+  import { checkBackendReady, sendSwitchImage } from '../ts/Telegram'
   import AwaitBackend from '../components/AwaitBackend.vue'
 
   let send_pos = ref({
