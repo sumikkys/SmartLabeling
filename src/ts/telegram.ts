@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import axios, { AxiosError } from 'axios'
 import { imgPath } from './Files'
-import { projectPath, projectName } from '../ts/Projects'
+import { projectPath, projectName } from './Projects'
 
 // 判断是否是选择图片或上传图片
 export const isSwitch = ref(false)
