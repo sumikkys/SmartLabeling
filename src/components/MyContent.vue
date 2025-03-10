@@ -1,9 +1,9 @@
 <script setup lang="ts">
-  import { ref, watch, onMounted } from 'vue'
+  import { ref, watch, onMounted, computed } from 'vue'
   import { selection } from '../ts/Selection'
   import { Dots, isDotMasked } from '../ts/Dots'
   import { Boxes } from '../ts/Boxes'
-  import { imgPath, imgURL } from '../ts/Files'
+  import { imgPath, imgURL, myFiles } from '../ts/Files'
   import { projectPath, projectName } from '../ts/Projects'
   import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
   import { api, handleError, isSwitch } from '../ts/Telegram'
@@ -32,6 +32,7 @@
   let pos_y = 0
 
   const myCanvas = ref()
+  const AnnotationMask = computed(() => myFiles.getVisibleMaskfromPathList(myFiles.getPathIdfromPathList(imgPath.value)))
 
   onMounted(() => {
     draw_Image(imgURL.value) // 初始绘制图片
@@ -386,7 +387,7 @@
   }
 
   // 绘制遮罩
-  function drawMask(masks : Array<Array<number>>) {
+  function drawMask(mask : Array<Array<number>>) {
     const canvas = myCanvas.value
     const ctx = canvas.getContext('2d')
     ctx.beginPath()
@@ -399,25 +400,41 @@
     Dots.dots.forEach(dot => {
       drawPointByXY(dot.x, dot.y, dot.dot_type)
     })
+    drawAnnotationMasks()
+    if (mask.length === 0) {
+      tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+      return
+    }
+    drawMaskHelp(mask, '#00BFFF', false)
+  }
+
+  // 绘制遮罩的具体实现函数
+  function drawMaskHelp(mask : Array<Array<number>>, color: string, isAnnotation: boolean) {
+    const canvas = myCanvas.value
+    const ctx = canvas.getContext('2d')
+    ctx.beginPath()
     ctx.globalCompositeOperation="source-over"
     ctx.globalAlpha = 0.1
-    ctx.fillStyle = '#00BFFF'
-    if (!masks) {
-      tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
-    }
-    for (let j = 0; j < masks.length; j++) {
-      for (let i = 0; i < masks[j].length; i++) {
-        if (masks[j][i] === 1) {
-          tempMaskMatrix.value[j][i] = 1
+    ctx.fillStyle = color
+    for (let j = 0; j < mask.length; j++) {
+      for (let i = 0; i < mask[j].length; i++) {
+        if (mask[j][i] === 1) {
+          if (!isAnnotation) tempMaskMatrix.value[j][i] = 1
           ctx.beginPath()
           ctx.arc(i*zoom_x+pos_x, j*zoom_y+pos_y, 1, 0 ,2 * Math.PI)
           ctx.fill()
         }
-        else if (masks[j][i] === 0) {
+        else if (mask[j][i] === 0 && !isAnnotation) {
           tempMaskMatrix.value[j][i] = 0
         }
       }
     }
+  }
+
+  function drawAnnotationMasks() {
+    AnnotationMask.value?.forEach(tempMask => {
+      drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color, true)
+    })
   }
 
   watch(Dots.operation, (newVal) => {
@@ -467,6 +484,10 @@
           sendSwitchImage()
         }
       }
+  })
+
+  watch(AnnotationMask, ()=> {
+    drawMask(tempMaskMatrix.value)
   })
 </script>
 

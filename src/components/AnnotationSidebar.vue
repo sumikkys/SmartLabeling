@@ -9,6 +9,8 @@
     import MyDownIcon from './icons/MyDownIcon.vue'
     import MyClassIcon from './icons/MyClassIcon.vue'
     import MyUpIcon from './icons/MyUpIcon.vue'
+    import MyVisibleIcon from './icons/MyVisibleIcon.vue'
+    import MyInvisibleIcon from './icons/MyInvisibleIcon.vue'
 
     let CurrentImageName = ref('')
     let showSearchBar = ref(false)
@@ -20,23 +22,29 @@
     let searchQueryImage = ref('')
     let AddOneClassName = ref('')
     const classInput = ref<HTMLInputElement | null>(null)
+    let colorNum = 0
 
     // 定义数据列表
-    const ImageList = ref<Array<string>>([])
-    const MasksList = computed(() => myFiles.getAllMaskNamefromPathList(ImageList.value.indexOf(CurrentImageName.value)))
-    const CurrentAllClass = computed(() => myFiles.getAllClassNamefromPathList(ImageList.value.indexOf(CurrentImageName.value)))
+    const ImageList = computed(() => myFiles.getAllPathNamefromPathList())
+    const maskItems = computed(() => myFiles.getMaskItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
+    const currentClassItems = computed(() => myFiles.getClassItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
     const AllClass = ref<Array<string>>([])
-    const ClassColor = ref<Array<string>>([
+    const ClassColor = [
         "#FF0000",
-        "#FF8C00",
-        "#FFD700",
-        "#008000",
-        "#9400D3"
-    ])
+        "#FF8000",
+        "#FFFF00",
+        "#00FF00",
+        "#0000FF",
+        "#7F00FF",
+        "#FF00FF",
+        "#FF007F",
+        "#808080"
+    ]
 
     const SwitchImage = (id : number) => {
         isSwitch.value = true
         imgPath.value = myFiles.getPathfromPathList(id)
+        colorNum = 0
     }
 
     // 增加mask
@@ -51,8 +59,10 @@
             })
             console.log(response.data)
             const maskName = CurrentClass.value+"_"+response.data.mask_id?.split('_').pop()
+            myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
             myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
-            myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
+            if (colorNum < ClassColor.length - 1) colorNum++
+            else colorNum = 0
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -145,7 +155,7 @@
     const ExoprtAllImage = async () => {
         try {
             const response = await api.post('/api/export', {
-                "image_id": myFiles.getAllPathIdsfromPathList(),
+                "image_id": myFiles.getAllPathIdfromPathList(),
                 "project_name": projectName.value,
                 "project_path": projectPath.value
             })
@@ -183,12 +193,15 @@
     const showBar = () => {
         showSearchBar.value = !showSearchBar.value
     }
+
     const showClass =()=>{
         showAllClass.value =!showAllClass.value
     }
+
     const showSelectBar =()=> {
         showSelect.value = !showSelect.value
     }
+
     const selectionOption =(option:string)=> {
         CurrentClass.value = option
         showSelect.value = !showSelect.value
@@ -226,6 +239,11 @@
         })
     })
 
+    // 设置已标注Mask的可见性
+    const setMaskVisible = (index: number) => {
+        myFiles.setMaskVisiblefromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
+    }
+
     watch(showAddOneClass, async (newVal) => {
         if (newVal) {
             await nextTick()  // 等待更新
@@ -237,16 +255,6 @@
         const imgName = newVal.split('\\').pop().split('/').pop()
         CurrentImageName.value = imgName
         await nextTick()
-    })
-
-    watch(myFiles.list_num, async(newVal) => {
-        if (newVal && newVal !== 0) {
-            const tempPath = myFiles.getPathfromPathList(newVal - 1)
-            if (tempPath){
-                const tempPathName = tempPath.split('\\').pop()?.split('/').pop() ?? "unknown"
-                ImageList.value.push(tempPathName)
-            }
-        }
     })
 </script>
 
@@ -282,8 +290,13 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div class="data-item" v-for="(item, index) in MasksList" :key="index" style="justify-content: space-around;">{{ item }}
-                <button @click="sendRemoveMaskAnnotation(index, item)" class="MyMask">-</button>
+            <div class="data-item" v-for="(maskItem, index) in maskItems" :key="index" style="padding-left: 2rem;">
+                <div style="width: 90%; display: flex; justify-content: start; padding: 0rem;">
+                    <MyVisibleIcon v-if="maskItem.isVisible" @click="setMaskVisible(index)" style="cursor: pointer;"></MyVisibleIcon>
+                    <MyInvisibleIcon v-else @click="setMaskVisible(index)" style="cursor: pointer;"></MyInvisibleIcon>&nbsp;&nbsp;
+                    <span style="text-align: center;">{{ maskItem.mask_name }}</span>
+                </div>
+                <button @click="sendRemoveMaskAnnotation(index, maskItem.mask_name)" class="MyMask">-</button>
             </div>
         </div>
       </li>
@@ -300,11 +313,11 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div v-if="!showAllClass" class="data-item" v-for="(item, index) in CurrentAllClass" :key="index" style="padding-left: 2rem;">
-                <span class="ClassColor" :style="{ backgroundColor: ClassColor[index] }"></span>&nbsp;&nbsp;
-                <span>{{ item }}</span>
+            <div v-if="!showAllClass" class="data-item" v-for="(classItem, index) in currentClassItems" :key="index" style="padding-left: 2rem;">
+                <span class="ClassColor" :style="{ backgroundColor: classItem.class_color }"></span>&nbsp;&nbsp;
+                <span>{{ classItem.class_name }}</span>
             </div>
-            <div v-else class="data-item" v-for="(item, index1) in AllClass" :key="index1">{{ item }}</div>
+            <div v-else class="data-item" v-for="(item, index1) in AllClass" :key="index1" style="justify-content: center;">{{ item }}</div>
         </div>
       </li>
       <li class="Tipli">
@@ -488,6 +501,7 @@
         width: 1.5rem;
         height: 1.5rem;
         border: none;
+        border-radius: 0.5rem;
     }
     .Classli {
         position: relative;
