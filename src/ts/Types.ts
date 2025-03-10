@@ -17,10 +17,13 @@ export interface FileItem {
 export interface MaskItem {
     mask_matrix: Array<Array<number>>,
     mask_id: string,
-    mask_name: string
+    mask_name: string,
+    mask_color: string,
+    isVisible: boolean
 }
 
 export interface ClassItem {
     class_name : string,
+    class_color: string,
     count : number
 }
