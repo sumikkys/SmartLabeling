@@ -5,7 +5,7 @@
     import { Boxes } from '../ts/Boxes'
     import { imgPath, myFiles } from '../ts/Files'
     import { projectPath, projectName } from '../ts/Projects'
-    import { isSwitch, CreateNewProject, sendImageData } from '../ts/Telegram'
+    import { isSwitch, CreateNewProject, sendImageData, sendSwitchImage } from '../ts/Telegram'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
@@ -37,6 +37,7 @@
                     myFiles.addPathtoPathList(path)
                     await sendImageData(path)
                 }
+                await sendSwitchImage()
             } else {
                 filePath.value = '未选择文件'
             }

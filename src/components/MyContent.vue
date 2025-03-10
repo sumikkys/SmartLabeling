@@ -400,11 +400,11 @@
     Dots.dots.forEach(dot => {
       drawPointByXY(dot.x, dot.y, dot.dot_type)
     })
-    drawAnnotationMasks()
     if (mask.length === 0) {
       tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
       return
     }
+    drawAnnotationMasks()
     drawMaskHelp(mask, '#00BFFF', false)
   }
 
