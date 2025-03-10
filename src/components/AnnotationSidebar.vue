@@ -53,7 +53,7 @@
             const response = await api.post('/api/annotation-tools/prompt', {
                 "operation": 0,
                 "mask_data": {
-                    "class_id": AllClass.value.indexOf(CurrentClass.value),
+                    "class_id": AllClass.value.indexOf(CurrentClass.value)+1,
                     "masks": tempMaskMatrix.value
                 }
             })

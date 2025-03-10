@@ -51,9 +51,9 @@ export class Masks {
     }
 
     // 获取可见的所有mask
-    getVisibleMaskList() {
+    getVisibleMaskList(): Array<MaskItem> {
         const currentList = this.mask_list.value ?? [];
-        return currentList?.filter((tempMask) => tempMask.isVisible).map(tempMask => tempMask) ?? [];
+        return currentList?.filter((tempMask) => tempMask.isVisible).map(tempMask => tempMask).slice() ?? [];
     }
 
     getMaskNameList() {

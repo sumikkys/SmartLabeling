@@ -1,6 +1,6 @@
 // Files.ts
 import { ref } from 'vue'
-import { FileItem } from './Types'
+import { FileItem, MaskItem, ClassItem } from './Types'
 import { Masks } from './Masks'
 import { Classes } from './Classes'
 
@@ -83,8 +83,8 @@ export class Files {
     }
 
     // 根据索引获取某一张图片的所有可见的mask
-    getVisibleMaskfromPathList(path_id: number) {
-        return this.list.value.at(path_id)?.mask.getVisibleMaskList()?.slice ?? [];
+    getVisibleMaskfromPathList(path_id: number): Array<MaskItem> {
+        return this.list.value.at(path_id)?.mask.getVisibleMaskList() ?? [];
     }
 
     // 根据索引获取某一张图片的所有maskname
@@ -93,7 +93,7 @@ export class Files {
     }
 
     // 根据索引获取某一张图片的所有class
-    getClassItemsFromPath(path_id: number) {
+    getClassItemsFromPath(path_id: number): Array<ClassItem> {
         return this.list.value.at(path_id)?.class.getClassList()?.slice() ?? [];
     }
 
