@@ -50,12 +50,12 @@ export class Files {
 
     // 根据文件名获取图片文件id
     getPathIdfromPathList(path: string) {
-        return this.list.value.findIndex(tempFile => tempFile.path === path)
+        return this.list.value.findIndex(tempFile => tempFile.path === path);
     }
 
     // 获取所有文件名
     getAllPathNamefromPathList() {
-        return this.list.value.map(tempFile => tempFile.path.split('\\').pop()?.split('/').pop() ?? "") || [];
+        return this.list.value.map(tempFile => tempFile.path.split('\\').pop()?.split('/').pop() ?? "") ?? [];
     }
 
     // 获取所有文件id
@@ -69,7 +69,7 @@ export class Files {
 
     // 根据索引获取某一张图片的mask数组
     getMaskItemsFromPath(path_id: number) {
-        return this.list.value.at(path_id)?.mask.getMaskList()?.slice() || [];
+        return this.list.value.at(path_id)?.mask.getMaskList()?.slice() ?? [];
     }
 
     // 根据索引获取某一张图片的某一个mask矩阵
@@ -84,17 +84,17 @@ export class Files {
 
     // 根据索引获取某一张图片的所有可见的mask
     getVisibleMaskfromPathList(path_id: number) {
-        return this.list.value.at(path_id)?.mask.getVisibleMaskList();
+        return this.list.value.at(path_id)?.mask.getVisibleMaskList()?.slice ?? [];
     }
 
     // 根据索引获取某一张图片的所有maskname
     getAllMaskNamefromPathList(path_id: number) {
-        return this.list.value.at(path_id)?.mask.getMaskNameList();
+        return this.list.value.at(path_id)?.mask.getMaskNameList()?.slice ?? [];
     }
 
     // 根据索引获取某一张图片的所有class
     getClassItemsFromPath(path_id: number) {
-        return this.list.value.at(path_id)?.class.getClassList()?.slice() || [];
+        return this.list.value.at(path_id)?.class.getClassList()?.slice() ?? [];
     }
 
     // 根据索引删除某一张图片的某一个mask

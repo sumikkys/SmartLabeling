@@ -53,18 +53,18 @@ export class Masks {
     // 获取可见的所有mask
     getVisibleMaskList() {
         const currentList = this.mask_list.value ?? [];
-        return currentList?.filter((tempMask) => tempMask.isVisible).map(tempMask => tempMask);
+        return currentList?.filter((tempMask) => tempMask.isVisible).map(tempMask => tempMask) ?? [];
     }
 
     getMaskNameList() {
         const currentList = this.mask_list.value ?? [];
-        return currentList?.map(tempMask => tempMask.mask_name) || [];
+        return currentList?.map(tempMask => tempMask.mask_name) ?? [];
     }
 
     // 获取所有mask的可见性
     getMaskVisibleList() {
         const currentList = this.mask_list.value ?? [];
-        return currentList?.map(tempMask => tempMask.isVisible) || [];
+        return currentList?.map(tempMask => tempMask.isVisible) ?? [];
     }
 
     removeMaskfromMaskList(index_id: number) {
