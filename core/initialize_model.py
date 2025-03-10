@@ -10,8 +10,8 @@ def initialize_models():
     global encoder, decoder
 
     base_path = os.path.dirname(__file__)
-    encoder_path = os.path.join(base_path,"models/sam-med2d_b.encoder.onnx")
-    decoder_path = os.path.join(base_path,"models/sam-med2d_b.decoder.onnx")
+    encoder_path = os.path.join(base_path,"models/sam.encoder.onnx")
+    decoder_path = os.path.join(base_path,"models/sam.decoder.onnx")
 
     # Initialize the SAM-Med2D ONNX model
     encoder = SamEncoder(

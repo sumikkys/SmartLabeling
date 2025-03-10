@@ -3,9 +3,9 @@
 </script>
 
 <template>
-    <div class="myHeader">SAM
+    <div class="myHeader">SmartLabeling
     </div>
-    <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10)" width="98%" color=lightgray SIZE=2 />
+    <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10)" width="100%" color=lightgray SIZE=2 />
 </template>
 
 <style scoped>
@@ -13,7 +13,7 @@
         color: black;
         font: bold 3rem Arial, sans-serif;
         padding: 1rem 1rem 0rem 1rem;
-        margin: 0%;
+        margin: 0rem;
         height: 5rem;
         display: flex;
         justify-content: start;

@@ -20,14 +20,14 @@ async def switchImage(image_request: ProjectImageRequest):
         # 获取 image_id
         image_id = image_id_cache.get(image_path_str)
         if image_id is None:
-            raise ValueError(f"Image path {image_path_str} not found in cache. Current cache: {image_id_cache}")
+            raise ValueError(f"Image path {image_path_str} not found in cache.")
         
-        result = switch_image(image_id)
+        image_name, image_data = switch_image(image_id)
         response_data = ImageResponse(
             status="success",
             message="Image switch successfully",
-            image_data=image_data_cache[image_id],  # 测试版本保留
-            data=ImageResponseData(image_path=image_path_str, image_name=result)
+            image_data=image_data,
+            data=ImageResponseData(image_path=image_path_str, image_name=image_name)
         )
         return response_data
     

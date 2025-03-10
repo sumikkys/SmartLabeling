@@ -1,12 +1,12 @@
 <script setup lang="ts">
   import { ref , watch } from 'vue'
-  import { selection } from '../../js/selection'
+  import { selection } from '../../ts/selection'
 
-  let color = ref('#2962D9')
+  let color = ref('#409eff')
 
   watch(selection, (newVal) => {
     if (newVal === 1) {
-      color.value = '#2962D9'
+      color.value = '#409eff'
     } else {
       color.value = '#000000'
     }

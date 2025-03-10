@@ -6,7 +6,7 @@ from schemas.annotation_tools_schema import *
 # 在文件开头添加全局计数器
 class GlobalCounter:
     def __init__(self):
-        self.class_counter = 0  # 每个image_id对应一个class计数器
+        self.class_counter = 1  # 每个image_id对应一个class计数器
         self.mask_counter = {}   # 每个image_id的每个class_id对应一个mask计数器
     
     def get_next_class_id(self) -> int:
