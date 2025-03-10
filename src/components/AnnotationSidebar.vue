@@ -1,7 +1,8 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
-    import { api, handleError, isSwitch } from '../ts/telegram'
-    import { imgPath, projectPath, projectName, Paths } from '../ts/file'
+    import { api, handleError, isSwitch } from '../ts/Telegram'
+    import { imgPath, myFiles } from '../ts/Files'
+    import { projectPath, projectName } from '../ts/Projects'
     import { tempMaskMatrix } from '../ts/Masks'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
     import MyRightImage from './icons/MyRightImageIcon.vue'
@@ -18,31 +19,24 @@
     let searchQuery = ref('')
     let searchQueryImage = ref('')
     let AddOneClassName = ref('')
+    const classInput = ref<HTMLInputElement | null>(null)
 
     // 定义数据列表
     const ImageList = ref<Array<string>>([])
-    const MasksList = ref<Array<string>>([])
+    const MasksList = computed(() => myFiles.getAllMaskNamefromPathList(ImageList.value.indexOf(CurrentImageName.value)))
+    const CurrentAllClass = computed(() => myFiles.getAllClassNamefromPathList(ImageList.value.indexOf(CurrentImageName.value)))
     const AllClass = ref<Array<string>>([])
-    const CurrentAllClass = ref<Array<string>>([])
-    CurrentClass.value = AllClass.value[0]
+    const ClassColor = ref<Array<string>>([
+        "#FF0000",
+        "#FF8C00",
+        "#FFD700",
+        "#008000",
+        "#9400D3"
+    ])
 
     const SwitchImage = (id : number) => {
         isSwitch.value = true
-        imgPath.value = Paths.findPath(id)
-        for (; CurrentAllClass.value.length > 0;) {
-            CurrentAllClass.value.pop()
-        }
-        for (; MasksList.value.length > 0;) {
-            MasksList.value.pop()
-        }
-        const tempClassList : Array<string> | undefined = Paths.getAllClassfromPath(ImageList.value.indexOf(CurrentImageName.value))
-        const tempMaskNameList : Array<string> | undefined = Paths.getAllMaskNamefromPath(ImageList.value.indexOf(CurrentImageName.value))
-        tempClassList?.forEach(tempClass => {
-            CurrentAllClass.value.push(tempClass)
-        })
-        tempMaskNameList?.forEach(tempMaskName => {
-            MasksList.value.push(tempMaskName)
-        })
+        imgPath.value = myFiles.getPathfromPathList(id)
     }
 
     // 增加mask
@@ -56,9 +50,9 @@
                 }
             })
             console.log(response.data)
-            const maskName = CurrentClass.value+"_"+ImageList.value.length
-            Paths.addMaskstoPath(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
-            MasksList.value.push(maskName)
+            const maskName = CurrentClass.value+"_"+response.data.mask_id?.split('_').pop()
+            myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
+            myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -70,15 +64,16 @@
     }
 
     // 删除mask
-    const sendRemoveMaskAnnotation = async (index : number) => {
+    const sendRemoveMaskAnnotation = async (index: number, item: string) => {
         try {
             const response = await api.post('/api/annotation-tools/prompt', {
                 "operation": 1,
-                "mask_id": Paths.getMaskIdfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
+                "mask_id": myFiles.getMaskIdfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
             })
             console.log(response.data)
-            Paths.removeMaskfromMasks(ImageList.value.indexOf(CurrentImageName.value), index)
-            MasksList.value.splice(index, 1)
+            const className = item.substring(0, item.lastIndexOf("_"))
+            myFiles.removeMaskfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
+            myFiles.removeClassfromPathList(ImageList.value.indexOf(CurrentImageName.value), className)
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -96,7 +91,8 @@
                 "operation": 3
             })
             console.log(response.data)
-            AllClass.value.push(AddOneClassName.value);
+            AllClass.value.push(AddOneClassName.value)
+            AddOneClassName.value = ''      // 清除输入框内的文字残留
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -108,11 +104,11 @@
     }
 
     // 增加类别
-    const sendAddCategoryAnnotation = async (class_name : string) => {
+    const sendAddCategoryAnnotation = async () => {
         try {
             const response = await api.post('/api/annotation-tools/prompt', {
                 "operation": 4,
-                "class_name": class_name
+                "class_name": AddOneClassName.value
             })
             console.log(response.data)
             sendGetCategoryAnnotation()
@@ -126,6 +122,7 @@
         }
     }
 
+    // 导出当前图片Mask
     const ExportCurrentImage = async () => {
         try {
             const response = await api.post('/api/export', {
@@ -144,10 +141,11 @@
         }
     }
 
+    // 导出所有图片Mask
     const ExoprtAllImage = async () => {
         try {
             const response = await api.post('/api/export', {
-                "image_id": Paths.getAllPathsfromPaths(),
+                "image_id": myFiles.getAllPathIdsfromPathList(),
                 "project_name": projectName.value,
                 "project_path": projectPath.value
             })
@@ -163,76 +161,77 @@
     }
 
     const prevImage =()=> {
-        const currentIndex = ImageList.value.indexOf(CurrentImageName.value);
+        const currentIndex = ImageList.value.indexOf(CurrentImageName.value)
         if (currentIndex > 0) {
-            CurrentImageName.value = ImageList.value[currentIndex - 1];
+            CurrentImageName.value = ImageList.value[currentIndex - 1]
         } else {
-            CurrentImageName.value = ImageList.value[ImageList.value.length - 1];
+            CurrentImageName.value = ImageList.value[ImageList.value.length - 1]
         }
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
-    };
+    }
     
     const nextImage = () => {
-        const currentIndex = ImageList.value.indexOf(CurrentImageName.value);
+        const currentIndex = ImageList.value.indexOf(CurrentImageName.value)
         if (currentIndex < ImageList.value.length - 1) {
-            CurrentImageName.value = ImageList.value[currentIndex + 1];
+            CurrentImageName.value = ImageList.value[currentIndex + 1]
         } else {
-            CurrentImageName.value = ImageList.value[0];
+            CurrentImageName.value = ImageList.value[0]
         }
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
-    };
+    }
 
     const showBar = () => {
-        showSearchBar.value = !showSearchBar.value;
+        showSearchBar.value = !showSearchBar.value
     }
     const showClass =()=>{
-        showAllClass.value =!showAllClass.value;
+        showAllClass.value =!showAllClass.value
     }
     const showSelectBar =()=> {
-        showSelect.value = !showSelect.value;
+        showSelect.value = !showSelect.value
     }
     const selectionOption =(option:string)=> {
-        CurrentClass.value = option;
-        showSelect.value = !showSelect.value;
+        CurrentClass.value = option
+        showSelect.value = !showSelect.value
+        searchQuery.value = ''
     }
 
     const selectionImage =(option:string)=> {
-        CurrentImageName.value = option;
+        CurrentImageName.value = option
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
-        showSearchBar.value = !showSearchBar.value;
+        showSearchBar.value = !showSearchBar.value
+        searchQueryImage.value = ''
     }
 
     const AddOneClass =()=>{
-        showAddOneClass.value = !showAddOneClass.value;
+        showAddOneClass.value = !showAddOneClass.value
     }
 
     const handleConfirm = () => {
-        showAddOneClass.value = !showAddOneClass.value;
+        showAddOneClass.value = !showAddOneClass.value
         if(!AllClass.value.includes(AddOneClassName.value)){
-            sendAddCategoryAnnotation(AddOneClassName.value)
+            sendAddCategoryAnnotation()
         }
-    };
-
-    const AddClassToMask =()=> {
-        if(!CurrentAllClass.value.includes(CurrentClass.value)){
-            CurrentAllClass.value.push(CurrentClass.value)
-            Paths.addClasstoPath(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value)
-        }
-        sendAddMaskAnnotation()
     }
 
     // 这里是搜索栏功能实现
     const AllClassFilter = computed(() => {
         return AllClass.value.filter((item) => {
-            return item.toLowerCase().includes(searchQuery.value.toLowerCase());
-        });
-    });
-
-    const ImageFilter =computed(()=>{
-        return ImageList.value.filter((item) =>{
-            return item.toLowerCase().includes((searchQueryImage.value.toLowerCase()));
+            return item.toLowerCase().includes(searchQuery.value.toLowerCase())
         })
-    });
+    })
+
+    const ImageFilter = computed(()=>{
+        return ImageList.value.filter((item) =>{
+            return item.toLowerCase().includes((searchQueryImage.value.toLowerCase()))
+        })
+    })
+
+    watch(showAddOneClass, async (newVal) => {
+        if (newVal) {
+            await nextTick()  // 等待更新
+            classInput.value?.focus()
+        }
+    })
 
     watch(imgPath, async(newVal) => {
         const imgName = newVal.split('\\').pop().split('/').pop()
@@ -240,11 +239,12 @@
         await nextTick()
     })
 
-    watch(Paths.list_num, async(newVal) => {
+    watch(myFiles.list_num, async(newVal) => {
         if (newVal && newVal !== 0) {
-            const tempPath = Paths.findPath(newVal - 1)?.split('\\').pop().split('/').pop()
+            const tempPath = myFiles.getPathfromPathList(newVal - 1)
             if (tempPath){
-                ImageList.value.push(tempPath)
+                const tempPathName = tempPath.split('\\').pop()?.split('/').pop() ?? "unknown"
+                ImageList.value.push(tempPathName)
             }
         }
     })
@@ -263,25 +263,27 @@
         <div>
             <span class="currentImage">{{ CurrentImageName }}</span>
             <span v-if="!CurrentImageName" class="noneImage">none</span>
-            <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button></div>
-            <div v-if="showSearchBar">
-                <div class="select-menu-Image">
-                    <div>
-                    <input class="search-Bar" v-model = "searchQueryImage" type="text" placeholder="搜索Image"/>
+            <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button>
+        </div>
+        <div v-if="showSearchBar">
+            <div class="select-menu-Image">
+                <div>
+                    <input class="search-Bar" v-model="searchQueryImage" type="text" placeholder="搜索Image"/>
+                    <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
                 </div>
                 <button class ="select-element" v-for="(item, index1) in ImageFilter" :key="index1" @click="selectionImage(item)">
                     <span class="ClassElement">{{ item }}</span>
                 </button>
-                </div>
             </div>
+        </div>
       </li>
       <li class="Masksli">
         <div>已标注Masks</div>
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div class="data-item" v-for="(item, index) in MasksList" :key="index">{{ item }}
-                <button @click="sendRemoveMaskAnnotation(index)" class="MyClass">-</button>
+            <div class="data-item" v-for="(item, index) in MasksList" :key="index" style="justify-content: space-around;">{{ item }}
+                <button @click="sendRemoveMaskAnnotation(index, item)" class="MyMask">-</button>
             </div>
         </div>
       </li>
@@ -293,12 +295,15 @@
             <button @click="showClass" class="MyClass"><MyClassIcon></MyClassIcon></button>
         </div>
         <div v-if="showAddOneClass" class="InputOneClass">
-            <input v-model="AddOneClassName" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="">
+            <input v-model="AddOneClassName" ref="classInput" class="InputContent" type="text" @keyup.enter="handleConfirm" placeholder="请输入Class">
         </div>
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div v-if="!showAllClass" class="data-item" v-for="(item, index) in CurrentAllClass" :key="index">{{ item }}</div>
+            <div v-if="!showAllClass" class="data-item" v-for="(item, index) in CurrentAllClass" :key="index" style="padding-left: 2rem;">
+                <span class="ClassColor" :style="{ backgroundColor: ClassColor[index] }"></span>&nbsp;&nbsp;
+                <span>{{ item }}</span>
+            </div>
             <div v-else class="data-item" v-for="(item, index1) in AllClass" :key="index1">{{ item }}</div>
         </div>
       </li>
@@ -307,14 +312,13 @@
       </li>
       <li class="TipBox">
         <div class="Box1">
-            <div>
-                <span class="CurrentClass">{{ CurrentClass }}</span>
-                <button class="ClassButton ArrowButton" @click="showSelectBar"><MyRightImage v-if="!showSelect"></MyRightImage><MyUpIcon v-else></MyUpIcon></button>
-            </div>
+            <span class="CurrentClass">{{ CurrentClass }}</span>
+            <button class="ClassButton ArrowButton" @click="showSelectBar"><MyRightImage v-if="!showSelect"></MyRightImage><MyUpIcon v-else></MyUpIcon></button>
             <div v-if="showSelect" >
                 <div class="select-menu">
                     <div>
-                        <input v-model = "searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
+                        <input v-model="searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
+                        <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
                     </div>
                     <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionOption(item)">
                         <span class="ClassElement">{{ item }}</span>
@@ -322,7 +326,7 @@
                 </div>
             </div>
         </div>
-        <button class="AddClass" @click="AddClassToMask">+</button>
+        <button class="AddClass" @click="sendAddMaskAnnotation">+</button>
       </li>
       <li class="Exportli">
         <button class="Exportlabeldatabutton" @click="ExportCurrentImage">导出当前图片</button>
@@ -333,15 +337,12 @@
 
 <style scoped>
     .MyAnothertools {
+        height: 100%;
         color: #000000;
         font: bold 1.5rem Arial, sans-serif;
-        width: 15vw;
-        height: 70vh;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 1.5rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
+        border: 0.1rem solid #D3D3D3;
         padding: 1.5rem;
-        margin-left: 3rem;
+        margin: 0rem;
         display: flex;
         list-style-type: none;
         flex-direction: column;
@@ -383,8 +384,8 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
-        border-radius: 1.1rem;
-        border: 0.2rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 90%;
         margin: 1rem;
@@ -402,6 +403,7 @@
         font: bold 1.4rem Arial, sans-serif;
     }
     .Box .SearchButton {
+        height: 1rem;
         position: absolute;
         right: 1rem;
         cursor: pointer;
@@ -410,13 +412,12 @@
         position: absolute;
         top:  100%;
         left: 0;
-        width: 90%;
-        height: 15rem;
+        width: 100%;
+        height: 14rem;
         background-color: #FFFFFF;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 1.1rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
-        padding: 0.5rem 1rem;
+        border: 0.1rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        padding: 0rem;
         z-index: 1;
         transition: all 0.3s ease;
         overflow-y: auto;
@@ -426,15 +427,20 @@
         width: 100%;
         height: 100%;
         background-color: #FFFFFF;
+        border-radius: 0.5rem;
         border: none;
         outline: none;
-        margin: 1rem;
-        padding: 0;
+        margin: 0.8rem;
+        padding: 0rem;
     }
     .Box .select-menu-Image .select-element{
         width: 100%;
         height: 20%;
-        border: 0.05rem solid #D3D3D3;
+        border: 0.1rem #D3D3D3;
+        border-top-style: none;
+        border-right-style: none;
+        border-bottom-style: solid;
+        border-left-style: none;
         background-color: #FFFFFF;
         box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
         transition: all 0.1s ease;
@@ -454,12 +460,34 @@
     .scroll-container {
         width: 30rem;
         height: 10rem;
+        padding: 0rem;
+        margin: 0rem;
         /* border: 1px solid #ccc; */
         overflow-y: auto;
     }
     .data-item {
-        padding: 1rem;
-        border-bottom: 0.1rem solid #eee;
+        padding: 0.5rem;
+        margin: 0rem;
+        border-bottom: 0.1rem solid #D3D3D3;
+        display: flex;
+        justify-content: start;
+        vertical-align: baseline;
+    }
+    .data-item .MyMask {
+        width: 2rem;
+        height: 2rem;
+        background-color: #FFFFFF;
+        color: #000000;
+        font: bold 1.5rem Arial, sans-serif;
+        border: 0.1rem solid #000000;
+        border-radius: 0.5rem;
+        text-align: top;
+        cursor: pointer;
+    }
+    .data-item .ClassColor {
+        width: 1.5rem;
+        height: 1.5rem;
+        border: none;
     }
     .Classli {
         position: relative;
@@ -487,13 +515,13 @@
     .Classli .InputOneClass {
         position: absolute;
         bottom: 100%;
-        left: 1vw;
+        left: 0.5vw;
     }
     .Classli .InputContent {
         width: 12vw;
         height: 2rem;
-        border-radius: 1rem;
-        border: 0.2rem solid #409eff;
+        border-radius: 0.6rem;
+        border: 0.1rem solid #D3D3D3;
     }
     .Tipli {
         display: flex;
@@ -510,8 +538,8 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
-        border-radius: 1.1rem;
-        border: 0.2rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 90%;
         margin: 1rem 1rem 1rem 0rem;
@@ -524,6 +552,7 @@
         font: bold 1.5rem Arial, sans-serif;
     }
     .Box1 .ClassButton {
+        height: 1rem;
         position: absolute;
         right: 1rem;
         cursor: pointer;
@@ -532,13 +561,12 @@
         position: absolute;
         bottom: 100%;
         left: 0;
-        width: 90%;
+        width: 100%;
         height: 15rem;
         background-color: #FFFFFF;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 1.1rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
-        padding: 0.5rem 1rem;
+        border: 0.1rem solid #D3D3D3;
+        border-radius: 0.6rem;
+        padding: 0rem;
         z-index: 1;
         transition: all 0.3s ease;
         overflow-y: auto;
@@ -550,7 +578,7 @@
         background-color: #FFFFFF;
         border: none;
         outline: none;
-        margin: 1rem;
+        margin: 0.8rem;
         padding: 0;
     }
     .select-menu .select-element {
@@ -598,7 +626,7 @@
         border-radius: 0.5rem;
         cursor: pointer;
         color: #FFFFFF;
-        font: bold 1.4rem Arial, sans-serif;
+        font: bold 1.2rem Arial, sans-serif;
         height: 3rem;
         width: 100%;
     }

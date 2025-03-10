@@ -1,15 +1,17 @@
 <script setup lang="ts">
     import { ref , watch } from 'vue'
-    import { selection } from '../ts/selection'
+    import { selection } from '../ts/Selection'
     import { Dots, isDotMasked } from '../ts/Dots'
     import { Boxes } from '../ts/Boxes'
-    import { imgPath, projectPath, projectName, Paths } from '../ts/file'
-    import { isSwitch, CreateNewProject, sendImageData } from '../ts/telegram'
+    import { imgPath, myFiles } from '../ts/Files'
+    import { projectPath, projectName } from '../ts/Projects'
+    import { isSwitch, CreateNewProject, sendImageData } from '../ts/Telegram'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
     import MyUpLoad from './icons/MyUpLoadIcon.vue'
-    import MyGallary from './icons/MyGallaryIcon.vue'
+    import MyNewProjectIcon from './icons/MyNewProjectIcon.vue'
+    import MyOpenProjectIcon from './icons/MyOpenProjectIcon.vue'
 
     let AddClass = ref('selected-btn')
     let AddTextClass = ref('selected-btn-text')
@@ -24,15 +26,15 @@
     const openFileDialog = async () => {
         try {
             // 调用主进程的文件选择功能
-            let paths : Array<string> | undefined = await window.electron.openFileDialog()
+            let paths : Array<string> | undefined = await (window as any).electron.openFileDialog()
             if (paths) {
                 isSwitch.value = false
                 for (const path of paths) {
                     filePath.value = path
-                    if (Paths.list.length === 0) {
+                    if (myFiles.list.value.length === 0) {
                         imgPath.value = path
                     }
-                    Paths.addPath(path)
+                    myFiles.addPathtoPathList(path)
                     await sendImageData(path)
                 }
             } else {
@@ -60,7 +62,7 @@
     const createDirectory = async() => {
         try {
             // 调用主进程的选取文件夹功能
-            const folderPath = await window.electron.createDirectory()
+            const folderPath = await (window as any).electron.createDirectory()
             if (folderPath) {
                 console.log("选择成功，文件保存路径为:", folderPath)
                 projectPath.value = folderPath // 存储文件夹路径
@@ -242,18 +244,25 @@
 
 <template>
     <ul class="myTools">
-        <li style="text-align: left;" class="normal-btn">
-            <button @click="openFileDialog" class="upload-btn"><MyUpLoad></MyUpLoad>&nbsp;&nbsp;Upload</button>
-            <button @click="createDirectory" class="gallary-btn"><MyGallary></MyGallary>&nbsp;&nbsp;New</button>
+        <li class="project-list">
+            <button @click="createDirectory" class="project-btn">
+                <MyNewProjectIcon style="width: 2rem;"></MyNewProjectIcon>&nbsp;&nbsp;<span style="width: 4rem;">New</span>
+            </button>
+            <button class="project-btn">
+                <MyOpenProjectIcon style="width: 2rem;"></MyOpenProjectIcon>&nbsp;&nbsp;<span style="width: 4rem;">Open</span>
+            </button>
+            <button @click="openFileDialog" class="project-btn">
+                <MyUpLoad style="width: 2rem;"></MyUpLoad>&nbsp;&nbsp;<span style="width: 4rem;">Upload</span>
+            </button>
             <Prompt ref="promptRef"/>
         </li>
         <li @click="MouseClickBTN('click')" 
                 :class="selection === 1 ? 'selected-tool' : 'unselected-tool'" id="click">
-            <div style="text-align: left">&nbsp;<MyClick></MyClick>&nbsp;&nbsp;Click</div>
+            <div class="tool-btn">&nbsp;&nbsp;<MyClick style="width: 2rem;"></MyClick>&nbsp;&nbsp;<span>Point</span></div>
         </li>
         <li @click="MouseClickBTN('box')" 
                 :class="selection === 2 ? 'selected-tool' : 'unselected-tool'" id="box">
-            <div style="text-align: left">&nbsp;<MyBox></MyBox>&nbsp;&nbsp;Box</div>
+            <div class="tool-btn">&nbsp;&nbsp;<MyBox style="width: 2rem;"></MyBox>&nbsp;&nbsp;<span>Box</span></div>
         </li>
         <li class="mask-btns-container">
             <div>
@@ -279,59 +288,56 @@
 
 <style scoped>
     .myTools {
+        height: 100%;
         color: #000000;
         font: bold 2.5rem Arial, sans-serif;
-        width: 10vw;
-        height: 70vh;
-        border: 0.2rem solid #D3D3D3;
-        border-radius: 0rem 1.5rem 1.5rem 0rem;
-        box-shadow: 0rem 0rem 1rem 0.5rem #D3D3D3;
+        border: 0.1rem solid #D3D3D3;
         padding: 1.5rem;
-        margin: 1.5rem 0rem;
+        margin: 0rem;
         display: flex;
         list-style-type: none;
         flex-direction: column;
         justify-content: start;
         align-items: center;
+        position: relative;
     }
 
-    .myTools .normal-btn {
+    .myTools .project-list {
         background-color: #FFFFFF;
         color: #000000;
-        font: bold 1.8rem Arial, sans-serif;
-        border-radius: 1.5rem;
-        border: 0.2rem solid #D3D3D3;
+        font: bold 1.6rem Arial, sans-serif;
+        border-radius: 1rem;
+        border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
-        justify-content: left;
-        vertical-align: top;     
+        display: flex;
+        flex-direction: column;
+        justify-content: start;
+        align-items: center;
     }
 
-    .normal-btn .upload-btn {
+    .project-list .project-btn {
+        width: 100%;
         background: none;
         border: none;
         color: inherit; 
-        font: inherit; 
-        padding: 0rem 0rem 0.3rem 0rem; 
-        cursor: pointer; 
-    }
-
-    .myTools .gallary-btn {
-        background: none;
-        border: none;
-        color: inherit; 
-        font: inherit; 
-        padding: 0rem 0rem 0.3rem 0rem; 
-        cursor: pointer; 
+        font: inherit;
+        display: flex;
+        flex-direction: row;
+        justify-content: start;
+        align-items: center;
+        text-align: left;
+        vertical-align: baseline;
+        cursor: pointer;
     }
 
     .myTools .unselected-tool {
         background-color: #FFFFFF;
         color: #000000;
-        font: bold 1.8rem Arial, sans-serif;
-        border-radius: 1.5rem;
-        border: 0.2rem solid #D3D3D3;
+        font: bold 1.6rem Arial, sans-serif;
+        border-radius: 1rem;
+        border: 0.1em solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
@@ -341,25 +347,33 @@
     .myTools .selected-tool {
         background-color: #FFFFFF;
         color: #409eff;
-        font: bold 1.8rem Arial, sans-serif;
-        border-radius: 1.5rem;
-        border: 0.2rem solid #409eff;
+        font: bold 1.6rem Arial, sans-serif;
+        border-radius: 1rem;
+        border: 0.1rem solid #409eff;
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
         cursor: pointer;
     }
 
+    .tool-btn {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: start;
+        align-items: center;
+        text-align: left;
+        vertical-align: baseline;
+        cursor: default;
+    }
+
     .myTools .mask-btns-container {
-        background-color: #FFFFFF;
-        color: #000000;
-        font: bold 1.8rem Arial, sans-serif;
-        border-radius: 1.5rem;
-        border: 0.2rem solid #D3D3D3;
+        border-radius: 1rem;
+        border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 85%;
         margin: 1rem;
-        cursor: pointer;
+        cursor: default;
     }
     
     li .mask-btns {
