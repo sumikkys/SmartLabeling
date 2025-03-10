@@ -23,6 +23,7 @@ async def prompt(request: PromptRequest):
             raise ValueError("Encoder is not initialized")
 
         image_path = Path(request.storage_path) / request.project_name / "images" / request.image_name
+        image_path = str(image_path)
         logger.info("Reading image from path: %s", image_path)
         img_file = cv2.imread(image_path)
 

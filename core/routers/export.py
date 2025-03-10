@@ -1,7 +1,7 @@
 #export.py
 from fastapi import APIRouter, HTTPException
 from schemas.export_schema import ExportRequest, ExportResponse, ExportResponseData
-from services.export_service import export_annotations
+from services.export_service import export_annotations, export_cache
 
 router = APIRouter()
 
@@ -10,12 +10,13 @@ async def export(request: ExportRequest):
     try:
         # 调用服务进行数据导出
         result = export_annotations(request)
+        cache_path = export_cache(request)
         
         # 返回存储路径和状态
         response_data = ExportResponse(
             status = "success",
             message = "Export successful",
-            data = ExportResponseData(masks_path= result["masks_path"], yaml_path= result["yaml_path"] )
+            data = ExportResponseData(masks_path= result["masks_path"], yaml_path= result["yaml_path"], cache_path= cache_path)
         )
 
         return response_data
