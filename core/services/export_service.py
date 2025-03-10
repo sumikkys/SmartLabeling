@@ -5,7 +5,8 @@ from PIL import Image
 from schemas.export_schema import ExportRequest
 from typing import Dict
 from pathlib import Path
-from cache.image_cache import image_data_cache, image_class_cache
+import json
+from cache.image_cache import *
 
 def update_yaml(yaml_path: str, image_id: int) -> str:
     try:
@@ -69,7 +70,7 @@ def export_annotations(request: ExportRequest) -> Dict[str, str]:
                     for y, row in enumerate(annotation):
                         for x, value in enumerate(row):
                             if value != 0.0 and 0 <= x < image_width and 0 <= y < image_height:
-                                mask_data[y, x] = class_id
+                                mask_data[y, x] = 256 - class_id #反向导出灰度方便调试
             
             # 保存mask图像
             image_mask = Image.fromarray(mask_data)
@@ -96,3 +97,16 @@ def export_annotations(request: ExportRequest) -> Dict[str, str]:
         
     # 返回最后一个成功的结果
     return results[-1]
+
+def export_cache(request: ExportRequest) -> str:
+    cache_path = Path(request.project_path) / request.project_name / "cache.json"
+    data = {
+        "image_id_cache": image_id_cache,
+        "image_data_cache": image_data_cache,
+        "image_class_cache": image_class_cache,
+        "image_embeddings_cache": {k: v.tolist() for k, v in image_embeddings_cache.items()},
+        "current_image_id": current_image_id
+    }
+    with open(cache_path, 'w') as f:
+        json.dump(data, f, indent=4)
+    return str(cache_path)
