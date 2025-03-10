@@ -3,7 +3,9 @@ import yaml
 from pathlib import Path
 from typing import Optional
 from schemas.project_schema import ProjectRequest
-from cache.image_cache import image_class_cache
+import json
+import numpy as np
+from cache.image_cache import *
 
 def create_project_dir(request:ProjectRequest) -> Optional[str]:
     """创建项目目录及相关文件"""
@@ -44,3 +46,28 @@ def create_project_yaml(yaml_path: Path):
     with open(yaml_path, 'w') as file:
         yaml.dump(data, file, default_flow_style=False)
 
+def read_project(request:ProjectRequest ) -> Optional[str]:
+    """读取已创建项目"""
+    project_name = request.project_name
+    project_path = Path(request.storage_path) / project_name
+
+    if not project_path.exists():
+        return f"Project {project_name} does not exist."
+    
+    cache_path = project_path / "cache.json"
+
+    if not cache_path.exists():
+        return f"Cache file for project {project_name} does not exist."
+    
+    with open(cache_path, 'rb') as f:
+        data = json.load(f)
+    global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+    image_id_cache = data["image_id_cache"]
+    image_data_cache = data["image_data_cache"]
+    image_class_cache = data["image_class_cache"]
+    image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
+    current_image_id = data["current_image_id"]
+    
+    return str(project_path)
+
+    

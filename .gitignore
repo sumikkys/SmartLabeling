@@ -11,3 +11,4 @@ core/__pycache__/*.pyc
 **/__pycache__/
 dist-electron/
 projects/
+core/images/
