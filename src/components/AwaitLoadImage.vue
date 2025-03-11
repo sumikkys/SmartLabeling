@@ -7,7 +7,7 @@
         const canvasLoading = myCanvasLoading.value
         const ctxLoading= canvasLoading?.getContext('2d')
         ctxLoading.beginPath()
-        ctxLoading.globalAlpha = 0.5
+        ctxLoading.globalAlpha = 0.8
         ctxLoading.fillStyle = "#696969"
         ctxLoading.fillRect(0,0,canvasLoading.width,canvasLoading.height)
     }
@@ -30,8 +30,8 @@
 <style>
     .loading-canvas {
         top: 10vh;
-        left: 14vw;
-        width: 70vw;
+        left: 0vw;
+        width: 100vw;
         height: 80vh;
         padding: 0rem;
         margin: 0rem;

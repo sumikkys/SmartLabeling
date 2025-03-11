@@ -22,12 +22,11 @@
     let searchQueryImage = ref('')
     let AddOneClassName = ref('')
     const classInput = ref<HTMLInputElement | null>(null)
-    let colorNum = 0
 
     // 定义数据列表
     const ImageList = computed(() => myFiles.getAllPathNamefromPathList())
-    const maskItems = computed(() => myFiles.getMaskItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
-    const currentClassItems = computed(() => myFiles.getClassItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
+    const MaskItems = computed(() => myFiles.getMaskItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
+    const CurrentClassItems = computed(() => myFiles.getClassItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
     const AllClass = ref<Array<string>>([])
     const ClassColor = [
         "#FF0000",
@@ -44,7 +43,6 @@
     const SwitchImage = (id : number) => {
         isSwitch.value = true
         imgPath.value = myFiles.getPathfromPathList(id)
-        colorNum = 0
     }
 
     // 增加mask
@@ -59,10 +57,13 @@
             })
             console.log(response.data)
             const maskName = CurrentClass.value+"_"+response.data.mask_id?.split('_').pop()
+            const index = CurrentClassItems.value.findIndex(tempClass => tempClass.class_name === CurrentClass.value)
+            let colorNum = 0
+            if (index === -1) {
+                colorNum = CurrentClassItems.value.length
+            }
             myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
             myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
-            if (colorNum < ClassColor.length - 1) colorNum++
-            else colorNum = 0
         } catch (err: unknown) {
             // 类型安全的错误转换
             if (err instanceof Error) {
@@ -290,7 +291,7 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div class="data-item" v-for="(maskItem, index) in maskItems" :key="index" style="padding-left: 2rem;">
+            <div class="data-item" v-for="(maskItem, index) in MaskItems" :key="index" style="padding-left: 2rem;">
                 <div style="width: 90%; display: flex; justify-content: start; padding: 0rem;">
                     <MyVisibleIcon v-if="maskItem.isVisible" @click="setMaskVisible(index)" style="cursor: pointer;"></MyVisibleIcon>
                     <MyInvisibleIcon v-else @click="setMaskVisible(index)" style="cursor: pointer;"></MyInvisibleIcon>&nbsp;&nbsp;
@@ -313,7 +314,7 @@
       </li>
       <li class="Box">
         <div class = "scroll-container">
-            <div v-if="!showAllClass" class="data-item" v-for="(classItem, index) in currentClassItems" :key="index" style="padding-left: 2rem;">
+            <div v-if="!showAllClass" class="data-item" v-for="(classItem, index) in CurrentClassItems" :key="index" style="padding-left: 2rem;">
                 <span class="ClassColor" :style="{ backgroundColor: classItem.class_color }"></span>&nbsp;&nbsp;
                 <span>{{ classItem.class_name }}</span>
             </div>
