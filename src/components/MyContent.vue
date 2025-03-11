@@ -1,29 +1,17 @@
 <script setup lang="ts">
   import { ref, watch, onMounted, computed } from 'vue'
   import { selection } from '../ts/Selection'
-  import { Dots, isDotMasked } from '../ts/Dots'
-  import { Boxes } from '../ts/Boxes'
+  import { Dots, send_dot, isDotMasked } from '../ts/Dots'
+  import { Boxes, send_box } from '../ts/Boxes'
   import { imgPath, imgURL, isLoading, myFiles } from '../ts/Files'
-  import { projectPath, projectName } from '../ts/Projects'
   import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
-  import { api, handleError, isSwitch } from '../ts/Telegram'
-  import { checkBackendReady, sendSwitchImage } from '../ts/Telegram'
+  import { isSwitch, checkBackendReady, sendSwitchImage, sendResetData } from '../ts/Telegram'
+  import { sendPointData, sendUndoPointData, sendRedoPointData } from '../ts/Telegram'
+  import { sendBoxData, sendUndoBoxData, sendRedoBoxData } from '../ts/Telegram'
   import AwaitBackend from '../components/AwaitBackend.vue'
   import AwaitLoadImage from '../components/AwaitLoadImage.vue'
 
-  let send_pos = ref({
-    x: 0,
-    y: 0    
-  })
-
   let box_flag = false
-
-  let send_box = ref({
-      start_x: 0,
-      start_y: 0,
-      end_x: 0,
-      end_y: 0
-  })
 
   let img_size_x = 0
   let img_size_y = 0
@@ -67,12 +55,12 @@
       }
     }
 
-    canvas.addEventListener('mousedown', function(e: MouseEvent) {
+    canvas.addEventListener('mousedown', async function(e: MouseEvent) {
       if (selection.value === 1) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           return
         }
-        send_pos.value = {
+        send_dot.value = {
             x: (e.offsetX - pos_x) / zoom_x,
             y: (e.offsetY - pos_y) / zoom_y
         }
@@ -91,7 +79,7 @@
       }
     })
 
-    canvas.addEventListener('mouseup', function(e: MouseEvent) {
+    canvas.addEventListener('mouseup', async function(e: MouseEvent) {
       if (selection.value === 2 && box_flag) {
         if ((e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) 
           || (e.offsetX-send_box.value.start_x*zoom_x-pos_x <= 1 && e.offsetY-send_box.value.start_y*zoom_y-pos_y <= 1)) {
@@ -104,11 +92,12 @@
         send_box.value.end_x = (e.offsetX - pos_x) / zoom_x
         send_box.value.end_y = (e.offsetY - pos_y) / zoom_y
         Boxes.setBox(send_box.value.start_x, send_box.value.start_y, send_box.value.end_x, send_box.value.end_y)
-        sendBoxData()
+        const maskMatrix = await sendBoxData()
+        drawMask(maskMatrix)
       }
     })
 
-    canvas.addEventListener('mousemove', function(e: MouseEvent) {
+    canvas.addEventListener('mousemove', async function(e: MouseEvent) {
       if (selection.value === 2 && box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           box_flag = false
@@ -123,26 +112,19 @@
   }
 
   // 画点
-  function drawPoint(e: MouseEvent) {
+  async function drawPoint(e: MouseEvent) {
     const canvas = myCanvas.value
     const ctx = canvas.getContext('2d')
     ctx.beginPath()
-    if (Dots.posIsDotted(send_pos.value.x, send_pos.value.y) === true) {
+    if (Dots.posIsDotted(send_dot.value.x, send_dot.value.y) === true) {
       return
     }
     ctx.arc(e.offsetX, e.offsetY, 5, 0, 2 * Math.PI)
     ctx.globalAlpha = 1
-    if (isDotMasked.value) {
-      ctx.fillStyle = '#EE00EE'
-      ctx.fill()
-      Dots.addDot(send_pos.value.x, send_pos.value.y, 0)
-    } 
-    else {
-      ctx.fillStyle = '#00BFFF'
-      ctx.fill()
-      Dots.addDot(send_pos.value.x, send_pos.value.y, 1)
-    }
-    sendPointData()
+    ctx.fillStyle = isDotMasked.value ? '#EE00EE' : '#00BFFF'
+    Dots.addDot(send_dot.value.x, send_dot.value.y, isDotMasked.value ? 0 : 1)
+    const maskMatrix = await sendPointData()
+    drawMask(maskMatrix)
   }
 
   // 仅用于绘制数组里点（undo操作删除的点）
@@ -152,108 +134,32 @@
     ctx.beginPath()
     ctx.arc(x*zoom_x+pos_x, y*zoom_y+pos_y, 5, 0, 2 * Math.PI)
     ctx.globalAlpha = 1
-    if (dot_type == 0) {
-      ctx.fillStyle = '#EE00EE'
-      ctx.fill()
-    } 
-    else if (dot_type == 1) {
-      ctx.fillStyle = '#00BFFF'
-      ctx.fill()
-    }
+    ctx.fillStyle = dot_type === 0 ? '#EE00EE' : '#00BFFF'
+    ctx.fill()
   }
 
   // 撤销点
-  function undoDot() {
+  async function undoDot() {
     let last_dot = Dots.undoDot()
     Dots.operation.value = 0
     if (last_dot) {
-      send_pos.value.x = last_dot.x
-      send_pos.value.y = last_dot.y
+      send_dot.value.x = last_dot.x
+      send_dot.value.y = last_dot.y
     }
-    sendUndoPointData()
+    const maskMatrix = await sendUndoPointData()
+    drawMask(maskMatrix)
   }
 
   // 反撤销点
-  function redoDot() {
+  async function redoDot() {
     let last_dot_redo = Dots.redoDot()
     Dots.operation.value = 0
     if (last_dot_redo) {
-      send_pos.value.x = last_dot_redo.x
-      send_pos.value.y = last_dot_redo.y
+      send_dot.value.x = last_dot_redo.x
+      send_dot.value.y = last_dot_redo.y
     }
-    sendRedoPointData()
-  }
-
-  // 发送点请求
-  const sendPointData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 0,
-          "type": isDotMasked.value ? 0 : 1,
-          "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
-  }
-
-  // 发送撤销点请求
-  const sendUndoPointData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 1,
-          "type": isDotMasked.value ? 0 : 1,
-          "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
-  }
-
-  // 发送反撤销点请求
-  const sendRedoPointData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 3,
-          "type": isDotMasked.value ? 0 : 1,
-          "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
+    const maskMatrix = await sendRedoPointData()
+    drawMask(maskMatrix)
   }
 
   // 画框
@@ -273,118 +179,20 @@
   }
 
   // 撤销框
-  function undoBox() {
+  async function undoBox() {
     Boxes.undoBox()
+    Boxes.operation.value = 0
     Dots.resetDots()
-    sendUndoBoxData()
+    const maskMatrix = await sendUndoBoxData()
+    drawMask(maskMatrix)
   }
 
   // 反撤销框
-  function redoBox() {
+  async function redoBox() {
     Boxes.redoBox()
-    sendRedoBoxData()
-  }
-
-  // 发送框
-  const sendBoxData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 0,
-          "type": 2,
-          "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        }
-        ) 
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-        
-      }  catch (err: unknown) {
-    // 类型安全的错误转换
-    if (err instanceof Error) {
-      handleError(err)
-    } else {
-      handleError(String(err))
-    }
-  }  
-  }
-
-  // 发送撤销框
-  const sendUndoBoxData = async() => {
-    try {
-      const response = await api.post('/api/prompt',{
-          "operation": 1,
-          "type": 2,
-          "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        }
-      )
-      const maskMatrix = response.data.masks
-      drawMask(maskMatrix)
-      console.log('Prompt 操作结果:', response.data)
-      
-    }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }  
-  }
-
-  // 发送反撤销框
-  const sendRedoBoxData = async() => {
-    try {
-      const response = await api.post('/api/prompt',{
-        "operation": 3,
-        "type": 2,
-        "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
-        "project_name": projectName.value,
-        "storage_path": projectPath.value,
-        "image_name": imgPath.value.split('\\').pop().split('/').pop()
-      }
-      ) 
-      const maskMatrix = response.data.masks
-      drawMask(maskMatrix)
-      console.log('Prompt 操作结果:', response.data)
-      
-    }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }  
-  }
-
-  // 发送清空请求
-  const sendResetData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 2,
-          "type": 0,
-          "position": [[0, 0]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
+    Boxes.operation.value = 0
+    const maskMatrix = await sendRedoBoxData()
+    drawMask(maskMatrix)
   }
 
   // 绘制遮罩
@@ -432,13 +240,14 @@
     }
   }
 
+  // 绘制已标注的可见的所有mask
   function drawAnnotationMasks() {
     AnnotationMask.value?.forEach(tempMask => {
       drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color, true)
     })
   }
 
-  watch(Dots.operation, (newVal) => {
+  watch(Dots.operation, async(newVal) => {
     if (newVal === 1) {
       undoDot()
     }
@@ -447,14 +256,15 @@
       Boxes.resetBox()
       Dots.operation.value = 0
       Boxes.operation.value = 0
-      sendResetData()
+      const maskMatrix = await sendResetData()
+      drawMask(maskMatrix)
     }
     else if (newVal === 3) {
       redoDot()
     }
   })
 
-  watch(Boxes.operation, (newVal) => {
+  watch(Boxes.operation, async(newVal) => {
     if (newVal === 1) {
       undoBox()
     }
@@ -481,7 +291,8 @@
         isDotMasked.value = true
         draw_Image(imgURL.value)  // 重新加载并绘制图片
         if (isSwitch.value) {
-          await sendResetData()
+          const maskMatrix = await sendResetData()
+          drawMask(maskMatrix)
           sendSwitchImage()
           isSwitch.value = false
         }

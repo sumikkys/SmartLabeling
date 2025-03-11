@@ -1,9 +1,10 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
-    import { api, handleError, isSwitch } from '../ts/Telegram'
     import { imgPath, myFiles } from '../ts/Files'
-    import { projectPath, projectName } from '../ts/Projects'
     import { tempMaskMatrix } from '../ts/Masks'
+    import { isSwitch } from '../ts/Telegram'
+    import { sendAddMaskAnnotation, sendRemoveMaskAnnotation, 
+        sendAddCategoryAnnotation, sendExportCurrentImage, sendExoprtAllImage } from '../ts/Telegram'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
     import MyRightImage from './icons/MyRightImageIcon.vue'
     import MyDownIcon from './icons/MyDownIcon.vue'
@@ -45,132 +46,7 @@
         imgPath.value = myFiles.getPathfromPathList(id)
     }
 
-    // 增加mask
-    const sendAddMaskAnnotation = async () => {
-        try {
-            const response = await api.post('/api/annotation-tools/prompt', {
-                "operation": 0,
-                "mask_data": {
-                    "class_id": AllClass.value.indexOf(CurrentClass.value)+1,
-                    "masks": tempMaskMatrix.value
-                }
-            })
-            console.log(response.data)
-            const maskName = CurrentClass.value+"_"+response.data.mask_id?.split('_').pop()
-            const index = CurrentClassItems.value.findIndex(tempClass => tempClass.class_name === CurrentClass.value)
-            let colorNum = 0
-            if (index === -1) {
-                colorNum = CurrentClassItems.value.length
-            }
-            myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
-            myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), response.data.mask_id, maskName)
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
-    // 删除mask
-    const sendRemoveMaskAnnotation = async (index: number, item: string) => {
-        try {
-            const response = await api.post('/api/annotation-tools/prompt', {
-                "operation": 1,
-                "mask_id": myFiles.getMaskIdfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
-            })
-            console.log(response.data)
-            const className = item.substring(0, item.lastIndexOf("_"))
-            myFiles.removeMaskfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
-            myFiles.removeClassfromPathList(ImageList.value.indexOf(CurrentImageName.value), className)
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
-    // 获取类别
-    const sendGetCategoryAnnotation = async () => {
-        try {
-            const response = await api.post('/api/annotation-tools/prompt', {
-                "operation": 3
-            })
-            console.log(response.data)
-            AllClass.value.push(AddOneClassName.value)
-            AddOneClassName.value = ''      // 清除输入框内的文字残留
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
-    // 增加类别
-    const sendAddCategoryAnnotation = async () => {
-        try {
-            const response = await api.post('/api/annotation-tools/prompt', {
-                "operation": 4,
-                "class_name": AddOneClassName.value
-            })
-            console.log(response.data)
-            sendGetCategoryAnnotation()
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
-    // 导出当前图片Mask
-    const ExportCurrentImage = async () => {
-        try {
-            const response = await api.post('/api/export', {
-                "image_id": [ImageList.value.indexOf(CurrentImageName.value)],
-                "project_name": projectName.value,
-                "project_path": projectPath.value
-            })
-            console.log(response.data)
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
-    // 导出所有图片Mask
-    const ExoprtAllImage = async () => {
-        try {
-            const response = await api.post('/api/export', {
-                "image_id": myFiles.getAllPathIdfromPathList(),
-                "project_name": projectName.value,
-                "project_path": projectPath.value
-            })
-            console.log(response.data)
-        } catch (err: unknown) {
-            // 类型安全的错误转换
-            if (err instanceof Error) {
-                handleError(err)
-            } else {
-                handleError(String(err))
-            }
-        }
-    }
-
+    // 切换上一张Image
     const prevImage =()=> {
         const currentIndex = ImageList.value.indexOf(CurrentImageName.value)
         if (currentIndex > 0) {
@@ -181,6 +57,7 @@
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
     }
     
+    // 切换下一张Image
     const nextImage = () => {
         const currentIndex = ImageList.value.indexOf(CurrentImageName.value)
         if (currentIndex < ImageList.value.length - 1) {
@@ -191,24 +68,34 @@
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
     }
 
-    const showBar = () => {
+    // 显示Image选择栏
+    const showSelectImageBar = () => {
         showSearchBar.value = !showSearchBar.value
     }
 
+    // 数据集和当前class的切换
     const showClass =()=>{
         showAllClass.value =!showAllClass.value
     }
 
-    const showSelectBar =()=> {
+    // 显示Class选择栏
+    const showSelectClassBar =()=> {
         showSelect.value = !showSelect.value
     }
 
-    const selectionOption =(option:string)=> {
+    // 显示Class添加栏
+    const AddOneClass =()=>{
+        showAddOneClass.value = !showAddOneClass.value
+    }
+
+    // 从Classes当中选择Class
+    const selectionClass =(option:string)=> {
         CurrentClass.value = option
         showSelect.value = !showSelect.value
         searchQuery.value = ''
     }
 
+    // 从Images当中选择Image
     const selectionImage =(option:string)=> {
         CurrentImageName.value = option
         SwitchImage(ImageList.value.indexOf(CurrentImageName.value))
@@ -216,24 +103,24 @@
         searchQueryImage.value = ''
     }
 
-    const AddOneClass =()=>{
-        showAddOneClass.value = !showAddOneClass.value
-    }
-
+    // 确认并添加Class
     const handleConfirm = () => {
         showAddOneClass.value = !showAddOneClass.value
         if(!AllClass.value.includes(AddOneClassName.value)){
-            sendAddCategoryAnnotation()
+            sendAddCategoryAnnotation(AddOneClassName.value)
+            AllClass.value.push(AddOneClassName.value)
+            AddOneClassName.value = ''      // 清除输入框内的文字残留
         }
     }
 
-    // 这里是搜索栏功能实现
+    // Class搜索栏功能实现
     const AllClassFilter = computed(() => {
         return AllClass.value.filter((item) => {
             return item.toLowerCase().includes(searchQuery.value.toLowerCase())
         })
     })
 
+    // Image搜索栏功能实现
     const ImageFilter = computed(()=>{
         return ImageList.value.filter((item) =>{
             return item.toLowerCase().includes((searchQueryImage.value.toLowerCase()))
@@ -243,6 +130,27 @@
     // 设置已标注Mask的可见性
     const setMaskVisible = (index: number) => {
         myFiles.setMaskVisiblefromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
+    }
+
+    // 添加Mask
+    const AddMaskAnnotation = async() => {
+        const mask_id = await sendAddMaskAnnotation(AllClass.value.indexOf(CurrentClass.value)+1, tempMaskMatrix.value)
+        const maskName = CurrentClass.value+"_"+ mask_id.split('_').pop()
+        const index = CurrentClassItems.value.findIndex(tempClass => tempClass.class_name === CurrentClass.value)
+        let colorNum = 0
+        if (index === -1) {
+            colorNum = CurrentClassItems.value.length
+        }
+        myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
+        myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), mask_id, maskName)
+    }
+
+    // 删除Mask
+    const RemoveMaskAnnotation = async (index: number, item: string) => {
+        sendRemoveMaskAnnotation(myFiles.getMaskIdfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)!)
+        const className = item.substring(0, item.lastIndexOf("_"))
+        myFiles.removeMaskfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
+        myFiles.removeClassfromPathList(ImageList.value.indexOf(CurrentImageName.value), className)
     }
 
     watch(showAddOneClass, async (newVal) => {
@@ -272,7 +180,7 @@
         <div>
             <span class="currentImage">{{ CurrentImageName }}</span>
             <span v-if="!CurrentImageName" class="noneImage">none</span>
-            <button @click="showBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button>
+            <button @click="showSelectImageBar" class="SearchButton ArrowButton" ><MyRightImage v-if="!showSearchBar"></MyRightImage><MyDownIcon v-else></MyDownIcon></button>
         </div>
         <div v-if="showSearchBar">
             <div class="select-menu-Image">
@@ -297,7 +205,7 @@
                     <MyInvisibleIcon v-else @click="setMaskVisible(index)" style="cursor: pointer;"></MyInvisibleIcon>&nbsp;&nbsp;
                     <span style="text-align: center;">{{ maskItem.mask_name }}</span>
                 </div>
-                <button @click="sendRemoveMaskAnnotation(index, maskItem.mask_name)" class="MyMask">-</button>
+                <button @click="RemoveMaskAnnotation(index, maskItem.mask_name)" class="MyMask">-</button>
             </div>
         </div>
       </li>
@@ -327,24 +235,24 @@
       <li class="TipBox">
         <div class="Box1">
             <span class="CurrentClass">{{ CurrentClass }}</span>
-            <button class="ClassButton ArrowButton" @click="showSelectBar"><MyRightImage v-if="!showSelect"></MyRightImage><MyUpIcon v-else></MyUpIcon></button>
+            <button class="ClassButton ArrowButton" @click="showSelectClassBar"><MyRightImage v-if="!showSelect"></MyRightImage><MyUpIcon v-else></MyUpIcon></button>
             <div v-if="showSelect" >
                 <div class="select-menu">
                     <div>
                         <input v-model="searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
                         <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
                     </div>
-                    <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionOption(item)">
+                    <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionClass(item)">
                         <span class="ClassElement">{{ item }}</span>
                     </button>
                 </div>
             </div>
         </div>
-        <button class="AddClass" @click="sendAddMaskAnnotation">+</button>
+        <button class="AddClass" @click="AddMaskAnnotation">+</button>
       </li>
       <li class="Exportli">
-        <button class="Exportlabeldatabutton" @click="ExportCurrentImage">导出当前图片</button>
-        <button class="Exportlabeldatabutton" @click="ExoprtAllImage">导出所有图片</button>
+        <button class="Exportlabeldatabutton" @click="sendExportCurrentImage([ImageList.indexOf(CurrentImageName)])">导出当前图片</button>
+        <button class="Exportlabeldatabutton" @click="sendExoprtAllImage(myFiles.getAllPathIdfromPathList())">导出所有图片</button>
       </li>
     </ul>
 </template>

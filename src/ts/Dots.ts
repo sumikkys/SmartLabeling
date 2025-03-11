@@ -4,6 +4,8 @@ import { DotItem } from './Types'
 
 export const isDotMasked = ref(true)
 
+export const send_dot = ref({ x: 0, y: 0 })
+
 export class Dots {
     static isDotted = ref(false);
     static isDotted_redo = ref(false);
