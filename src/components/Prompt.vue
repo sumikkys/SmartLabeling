@@ -1,43 +1,51 @@
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { ref, watch, nextTick } from 'vue'
 
-const props = defineProps({
-  title: { type: String, default: '请输入新建项目名称' },
-  placeholder: { type: String, default: '' },
-  successText: { type: String, default: '创建成功！' }
-})
-
-const isVisible = ref(false)
-const inputValue = ref('')
-const showSuccess = ref(false)
-let resolvePromise: (value: string | null) => void
-
-const show = (): Promise<string | null> => {
-  isVisible.value = true
-  inputValue.value = ''
-  showSuccess.value = false
-  return new Promise((resolve) => {
-    resolvePromise = resolve
+  const props = defineProps({
+    title: { type: String, default: '请输入新建项目名称' },
+    placeholder: { type: String, default: '' },
+    successText: { type: String, default: '创建成功！' }
   })
-}
 
-const handleConfirm = () => {
-  if (!showSuccess.value) {
-    showSuccess.value = true
-  } else {
+  const isVisible = ref(false)
+  const inputValue = ref('')
+  const showSuccess = ref(false)
+  let resolvePromise: (value: string | null) => void
+  const projectInput = ref<HTMLInputElement | null>(null)
+
+  const show = (): Promise<string | null> => {
+    isVisible.value = true
+    inputValue.value = ''
+    showSuccess.value = false
+    return new Promise((resolve) => {
+      resolvePromise = resolve
+    })
+  }
+
+  const handleConfirm = () => {
+    if (!showSuccess.value) {
+      showSuccess.value = true
+    } else {
+      isVisible.value = false
+      resolvePromise?.(inputValue.value)
+      resolvePromise = null!
+    }
+  }
+
+  const handleCancel = () => {
     isVisible.value = false
-    resolvePromise?.(inputValue.value)
+    resolvePromise?.(null)
     resolvePromise = null!
   }
-}
 
-const handleCancel = () => {
-  isVisible.value = false
-  resolvePromise?.(null)
-  resolvePromise = null!
-}
+  defineExpose({ show })
 
-defineExpose({ show })
+  watch(isVisible, async(newVal) => {
+    if (newVal) {
+      await nextTick()  // 等待更新
+      projectInput.value?.focus()
+    }
+  })
 </script>
 
 <template>
@@ -45,10 +53,10 @@ defineExpose({ show })
     <div class="prompt-content">
       <div v-if="!showSuccess">
         <h3>{{ title }}</h3>
-        <input v-model="inputValue" :placeholder="placeholder" @keyup.enter="handleConfirm">
+        <input v-model="inputValue" ref="projectInput" :placeholder="placeholder" @keyup.enter="handleConfirm">
       </div>
       <div v-else>
-        <h3 style="color: #67c23a;">{{ successText }}</h3>
+        <h3 style="color: #67c23a; font-size: 2.5rem;">{{ successText }}</h3>
         <p class="success-message">新创建项目名称：{{ inputValue }}</p>
       </div>
       <div class="button-group">
@@ -77,35 +85,35 @@ defineExpose({ show })
   
     .prompt-content {
         background: white;
-        padding: 20px;
-        border-radius: 8px;
-        width: 300px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        padding: 2rem;
+        border-radius: 0.8rem;
+        width: 30rem;
+        box-shadow: 0rem 0.2rem 0.8rem rgba(0, 0, 0, 0.15);
     }
     
     input {
         width: 95%;
-        padding: 8px;
-        margin: 10px 0;
-        border: 1px solid #ddd;
-        border-radius: 4px;
+        padding: 0.8rem;
+        margin: 1rem 0rem;
+        border: 0.1rem solid #ddd;
+        border-radius: 0.4rem;
     }
     
     .success-message {
-      margin: 10px 0;
+      margin: 1rem 0rem;
       color: #606266;
     }
 
     .button-group {
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
+        gap: 0.8rem;
     }
     
     button {
-        padding: 6px 12px;
+        padding: 0.6rem 1.2rem;
         border: none;
-        border-radius: 4px;
+        border-radius: 0.4rem;
         cursor: pointer;
         background: #409eff;
         color: white;

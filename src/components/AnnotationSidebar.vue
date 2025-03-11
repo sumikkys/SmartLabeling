@@ -354,7 +354,7 @@
         color: #000000;
         font: bold 1.5rem Arial, sans-serif;
         border: 0.1rem solid #D3D3D3;
-        padding: 1.5rem;
+        padding: 0rem 1.5rem;
         margin: 0rem;
         display: flex;
         list-style-type: none;
@@ -367,6 +367,8 @@
 
     .Image {
         width: 100%;
+        padding: 0rem;
+        margin: 1.5rem 0rem 0rem 0rem;
         display: flex;
         flex-direction: row;
         justify-content: space-between;

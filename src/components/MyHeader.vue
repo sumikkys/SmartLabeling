@@ -1,10 +1,12 @@
 <script setup lang="ts">
     import { ref } from 'vue'
+    import { projectName } from '../ts/Projects'
 </script>
 
 <template>
     <div class="myHeader">
         <div class="headerTitle">SmartLabeling</div>
+        <div class="projectName">项目名称: {{ projectName }}</div>
     </div>
 </template>
 
@@ -19,7 +21,7 @@
         padding: 0rem;
         margin: 0rem;
         display: flex;
-        justify-content: start;
+        justify-content: space-between;
         flex-direction: row;
         align-items: center;
         position: relative;
@@ -28,6 +30,18 @@
     .headerTitle {
         color: black;
         font: bold 3rem Arial, sans-serif;
+        padding: 1rem;
+        margin: 0rem;
+        display: flex;
+        justify-content: start;
+        align-items: center;
+        position: relative;
+    }
+
+    .projectName {
+        width: 15vw;
+        color: black;
+        font: bold 2rem Arial, sans-serif;
         padding: 1rem;
         margin: 0rem;
         display: flex;

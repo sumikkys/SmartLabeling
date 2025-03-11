@@ -79,7 +79,6 @@
         width: 100%;
         height: 100%;
         margin: 0;
-        border: 1px solid #CCCCCC;
         z-index: 999;
     }
         

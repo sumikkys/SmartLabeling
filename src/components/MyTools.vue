@@ -3,7 +3,7 @@
     import { selection } from '../ts/Selection'
     import { Dots, isDotMasked } from '../ts/Dots'
     import { Boxes } from '../ts/Boxes'
-    import { imgPath, myFiles } from '../ts/Files'
+    import { imgPath, isLoading, myFiles } from '../ts/Files'
     import { projectPath, projectName } from '../ts/Projects'
     import { isSwitch, CreateNewProject, sendImageData, sendSwitchImage } from '../ts/Telegram'
     import Prompt from '../components/Prompt.vue'
@@ -28,6 +28,7 @@
             // 调用主进程的文件选择功能
             let paths : Array<string> | undefined = await (window as any).electron.openFileDialog()
             if (paths) {
+                isLoading.value = true
                 isSwitch.value = false
                 for (const path of paths) {
                     filePath.value = path
@@ -38,6 +39,7 @@
                     await sendImageData(path)
                 }
                 await sendSwitchImage()
+                isLoading.value = false
             } else {
                 filePath.value = '未选择文件'
             }
@@ -293,7 +295,7 @@
         color: #000000;
         font: bold 2.5rem Arial, sans-serif;
         border: 0.1rem solid #D3D3D3;
-        padding: 1.5rem;
+        padding: 0rem 1.5rem;
         margin: 0rem;
         display: flex;
         list-style-type: none;
@@ -311,7 +313,7 @@
         border: 0.1rem solid #D3D3D3;
         padding: 0.5rem 1rem;
         width: 85%;
-        margin: 1rem;
+        margin: 2.5rem 1rem 1rem 1rem;
         display: flex;
         flex-direction: column;
         justify-content: start;

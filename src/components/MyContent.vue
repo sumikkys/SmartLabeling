@@ -3,12 +3,13 @@
   import { selection } from '../ts/Selection'
   import { Dots, isDotMasked } from '../ts/Dots'
   import { Boxes } from '../ts/Boxes'
-  import { imgPath, imgURL, myFiles } from '../ts/Files'
+  import { imgPath, imgURL, isLoading, myFiles } from '../ts/Files'
   import { projectPath, projectName } from '../ts/Projects'
   import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
   import { api, handleError, isSwitch } from '../ts/Telegram'
   import { checkBackendReady, sendSwitchImage } from '../ts/Telegram'
   import AwaitBackend from '../components/AwaitBackend.vue'
+  import AwaitLoadImage from '../components/AwaitLoadImage.vue'
 
   let send_pos = ref({
     x: 0,
@@ -482,6 +483,7 @@
         if (isSwitch.value) {
           await sendResetData()
           sendSwitchImage()
+          isSwitch.value = false
         }
       }
   })
@@ -496,6 +498,7 @@
     <div class="content">
       <canvas ref="myCanvas" class="content-canvas"></canvas>
       <img :src=imgURL id="bg" alt="请上传图片" />
+      <AwaitLoadImage v-if="isLoading"></AwaitLoadImage>
     </div>
     <AwaitBackend></AwaitBackend>
   </div>
@@ -509,7 +512,7 @@
         border-right-style: none;
         border-bottom-style: solid;
         border-left-style: none;
-        padding: 1.5rem;
+        padding: 0rem;
         margin: 0rem;
         display: flex;
         list-style-type: none;

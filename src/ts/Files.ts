@@ -6,6 +6,7 @@ import { Classes } from './Classes'
 
 export const imgPath = ref()
 export const imgURL = ref()
+export const isLoading = ref(false)
 
 export class Files {
     list = ref<Array<FileItem>>([]);
