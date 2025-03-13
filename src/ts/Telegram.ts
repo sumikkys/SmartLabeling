@@ -123,7 +123,7 @@ export const CreateNewProject = async () => {
       "project_name": projectName.value,
       "storage_path": projectPath.value
     })
-    console.log(response.data)
+    console.log('create-project 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -142,7 +142,7 @@ export const sendSwitchImage = async () => {
       "project_name": projectName.value,
       "project_path": projectPath.value 
     })
-    console.log(response.data)
+    console.log('switch_image 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -165,7 +165,7 @@ export const sendPointData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks ?? [[]]
+    return response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -331,7 +331,7 @@ export const sendAddMaskAnnotation = async (classId: number, masks: Array<Array<
         "masks": masks
       }
     })
-    console.log(response.data)
+    console.log('annotation-tools/prompt 操作结果:', response.data)
     return response.data.mask_id
   } catch (err: unknown) {
     // 类型安全的错误转换
@@ -351,7 +351,7 @@ export const sendRemoveMaskAnnotation = async (maskId: string) => {
       "operation": 1,
       "mask_id": maskId
     })
-    console.log(response.data)
+    console.log('annotation-tools/prompt 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -368,7 +368,7 @@ export const sendGetCategoryAnnotation = async () => {
     const response = await api.post('/api/annotation-tools/prompt', {
       "operation": 3
     })
-    console.log(response.data)
+    console.log('annotation-tools/prompt 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -386,7 +386,7 @@ export const sendAddCategoryAnnotation = async (className: string) => {
       "operation": 4,
       "class_name": className
     })
-    console.log(response.data)
+    console.log('annotation-tools/prompt 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -405,7 +405,7 @@ export const sendExportCurrentImage = async (imageId: Array<number>) => {
       "project_name": projectName.value,
       "project_path": projectPath.value
     })
-    console.log(response.data)
+    console.log('export 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -424,7 +424,7 @@ export const sendExoprtAllImage = async (imageIdList: Array<number>) => {
       "project_name": projectName.value,
       "project_path": projectPath.value
     })
-    console.log(response.data)
+    console.log('export 操作结果:', response.data)
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {

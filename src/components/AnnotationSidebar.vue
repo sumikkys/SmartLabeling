@@ -41,6 +41,7 @@
         "#808080"
     ]
 
+    // 切换图片
     const SwitchImage = (id : number) => {
         isSwitch.value = true
         imgPath.value = myFiles.getPathfromPathList(id)

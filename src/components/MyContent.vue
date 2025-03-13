@@ -12,7 +12,6 @@
   import AwaitLoadImage from '../components/AwaitLoadImage.vue'
 
   let box_flag = false
-
   let img_size_x = 0
   let img_size_y = 0
   let zoom_x = 0
@@ -21,6 +20,7 @@
   let pos_y = 0
 
   const myCanvas = ref()
+  const myOperationCanvas = ref()
   const AnnotationMask = computed(() => myFiles.getVisibleMaskfromPathList(myFiles.getPathIdfromPathList(imgPath.value)))
 
   onMounted(() => {
@@ -28,19 +28,45 @@
     checkBackendReady()
   })
 
+  // 异步初始化临时遮罩矩阵
+  function initializeTempMaskAsync(width: number, height: number): Promise<Array<Array<number>>> {
+    return new Promise((resolve) => {
+      const matrix: Array<Array<number>> = []
+      let i = 0
+      const chunkSize = 100 // 每次处理100行
+      function processChunk() {
+        const end = Math.min(i + chunkSize, height)
+        for (; i < end; i++) {
+          matrix[i] = new Array(width).fill(0)
+        }
+        if (i < height) {
+          setTimeout(processChunk, 0)
+        } else {
+          resolve(matrix)
+        }
+      }
+      processChunk()
+    })
+  }
+
   // 绘制图片
   function draw_Image(imageSrc: string) {
     // 确保图片清晰度，并初始化 canvas
     const canvas = myCanvas.value
+    const operationCanvas = myOperationCanvas.value
     canvas.width = canvas.clientWidth * window.devicePixelRatio
     canvas.height = canvas.clientHeight * window.devicePixelRatio
-    const ctx = canvas.getContext('2d')
-    ctx?.scale(window.devicePixelRatio, window.devicePixelRatio)
+    operationCanvas.width = canvas.width
+    operationCanvas.height = canvas.height
+    const ctx = canvas.getContext('2d')!
+    const operationCtx = operationCanvas.getContext('2d')!
+    ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    operationCtx.scale(window.devicePixelRatio, window.devicePixelRatio)
 
-    let img = document.getElementById("bg") as HTMLImageElement;
+    let img = document.getElementById("bg") as HTMLImageElement
     img.src = imageSrc
 
-    img.onload = function() {
+    img.onload = async function() {
       pos_x = (canvas.offsetWidth-img.width)/2
       pos_y = (canvas.offsetHeight-img.height)/2
       zoom_x = img.width / img.naturalWidth
@@ -48,9 +74,10 @@
       img_size_x = img.naturalWidth
       img_size_y = img.naturalHeight
       if (!isWindowChange || tempMaskMatrix.value.length === 0) {
-        tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+        tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
       }
       else if (isWindowChange) {
+        drawPointAndBox()
         drawMask(tempMaskMatrix.value)
       }
     }
@@ -91,6 +118,9 @@
         box_flag = false
         send_box.value.end_x = (e.offsetX - pos_x) / zoom_x
         send_box.value.end_y = (e.offsetY - pos_y) / zoom_y
+        Boxes.resetBox()
+        Dots.resetDots()
+        tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
         Boxes.setBox(send_box.value.start_x, send_box.value.start_y, send_box.value.end_x, send_box.value.end_y)
         const maskMatrix = await sendBoxData()
         drawMask(maskMatrix)
@@ -113,29 +143,30 @@
 
   // 画点
   async function drawPoint(e: MouseEvent) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
     if (Dots.posIsDotted(send_dot.value.x, send_dot.value.y) === true) {
       return
     }
-    ctx.arc(e.offsetX, e.offsetY, 5, 0, 2 * Math.PI)
-    ctx.globalAlpha = 1
-    ctx.fillStyle = isDotMasked.value ? '#EE00EE' : '#00BFFF'
+    operationCtx.beginPath()
+    operationCtx.globalAlpha = 1
+    operationCtx.arc(e.offsetX, e.offsetY, 5, 0, 2 * Math.PI)
+    operationCtx.fillStyle = isDotMasked.value ? '#EE00EE' : '#00BFFF'
+    operationCtx.fill()
     Dots.addDot(send_dot.value.x, send_dot.value.y, isDotMasked.value ? 0 : 1)
     const maskMatrix = await sendPointData()
     drawMask(maskMatrix)
   }
 
-  // 仅用于绘制数组里点（undo操作删除的点）
+  // 在OperationCanvas上绘制点
   function drawPointByXY(x: number, y: number, dot_type: number) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    ctx.arc(x*zoom_x+pos_x, y*zoom_y+pos_y, 5, 0, 2 * Math.PI)
-    ctx.globalAlpha = 1
-    ctx.fillStyle = dot_type === 0 ? '#EE00EE' : '#00BFFF'
-    ctx.fill()
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    operationCtx.beginPath()
+    operationCtx.globalAlpha = 1
+    operationCtx.arc(x * zoom_x + pos_x, y * zoom_y + pos_y, 5, 0, 2 * Math.PI)
+    operationCtx.fillStyle = dot_type === 0 ? '#EE00EE' : '#00BFFF'
+    operationCtx.fill()
   }
 
   // 撤销点
@@ -148,6 +179,7 @@
     }
     const maskMatrix = await sendUndoPointData()
     drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
   // 反撤销点
@@ -160,21 +192,19 @@
     }
     const maskMatrix = await sendRedoPointData()
     drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
   // 画框
   function drawBox(e: MouseEvent) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    Boxes.resetBox()
-    Dots.resetDots()
-    tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-    ctx.strokeStyle = '#EE00EE'
-    ctx.lineWidth = 2
-    ctx.globalAlpha = 1
-    ctx.strokeRect(send_box.value.start_x*zoom_x+pos_x, send_box.value.start_y*zoom_y+pos_y,
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    operationCtx.beginPath()
+    operationCtx.clearRect(0,0,operationCanvas.width,operationCanvas.height)
+    operationCtx.strokeStyle = '#EE00EE'
+    operationCtx.lineWidth = 2
+    operationCtx.globalAlpha = 1
+    operationCtx.strokeRect(send_box.value.start_x*zoom_x+pos_x, send_box.value.start_y*zoom_y+pos_y,
        e.offsetX-send_box.value.start_x*zoom_x-pos_x, e.offsetY-send_box.value.start_y*zoom_y-pos_y)
   }
 
@@ -185,6 +215,7 @@
     Dots.resetDots()
     const maskMatrix = await sendUndoBoxData()
     drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
   // 反撤销框
@@ -193,35 +224,43 @@
     Boxes.operation.value = 0
     const maskMatrix = await sendRedoBoxData()
     drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
-  // 绘制遮罩
-  function drawMask(mask : Array<Array<number>>) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-    ctx.strokeStyle = '#EE00EE'
-    ctx.lineWidth = 2
-    ctx.globalAlpha = 1
-    ctx.strokeRect(Boxes.box.start_x*zoom_x+pos_x, Boxes.box.start_y*zoom_y+pos_y, 
+  // 重绘框点
+  function drawPointAndBox() {
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    operationCtx.beginPath()
+    operationCtx.clearRect(0,0,operationCanvas.width,operationCanvas.height)
+    operationCtx.strokeStyle = '#EE00EE'
+    operationCtx.lineWidth = 2
+    operationCtx.globalAlpha = 1
+    operationCtx.strokeRect(Boxes.box.start_x*zoom_x+pos_x, Boxes.box.start_y*zoom_y+pos_y, 
         (Boxes.box.end_x-Boxes.box.start_x)*zoom_x, (Boxes.box.end_y-Boxes.box.start_y)*zoom_y)
     Dots.dots.forEach(dot => {
       drawPointByXY(dot.x, dot.y, dot.dot_type)
     })
+  }
+
+  // 绘制遮罩
+  async function drawMask(mask: Array<Array<number>>) {
+    const canvas = myCanvas.value
+    const ctx = canvas.getContext('2d')!
+    ctx.beginPath()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    drawAnnotationMasks() // 绘制已标注Mask
     if (mask.length === 0) {
-      tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+      tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
       return
     }
-    drawAnnotationMasks()
-    drawMaskHelp(mask, '#00BFFF', false)
+    drawMaskHelp(mask, '#00BFFF', false)  // 绘制遮罩
   }
 
   // 绘制遮罩的具体实现函数
-  function drawMaskHelp(mask : Array<Array<number>>, color: string, isAnnotation: boolean) {
+  function drawMaskHelp(mask: Array<Array<number>>, color: string, isAnnotation: boolean) {
     const canvas = myCanvas.value
     const ctx = canvas.getContext('2d')
-    ctx.beginPath()
     ctx.globalCompositeOperation="source-over"
     ctx.globalAlpha = 0.1
     ctx.fillStyle = color
@@ -242,9 +281,9 @@
 
   // 绘制已标注的可见的所有mask
   function drawAnnotationMasks() {
-    AnnotationMask.value?.forEach(tempMask => {
+    for (const tempMask of AnnotationMask.value) {
       drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color, true)
-    })
+    }
   }
 
   watch(Dots.operation, async(newVal) => {
@@ -258,6 +297,7 @@
       Boxes.operation.value = 0
       const maskMatrix = await sendResetData()
       drawMask(maskMatrix)
+      drawPointAndBox()
     }
     else if (newVal === 3) {
       redoDot()
@@ -308,6 +348,7 @@
   <div class="myContent">
     <div class="content">
       <canvas ref="myCanvas" class="content-canvas"></canvas>
+      <canvas ref="myOperationCanvas" class="operation-canvas"></canvas>
       <img :src=imgURL id="bg" alt="请上传图片" />
       <AwaitLoadImage v-if="isLoading"></AwaitLoadImage>
     </div>
@@ -348,6 +389,15 @@
     }
 
     .content .content-canvas {
+        width: 100%;
+        height: 100%;
+        padding: 0rem;
+        margin: 0rem;
+        z-index: 2;
+        position: absolute;
+    }
+
+    .content .operation-canvas {
         width: 100%;
         height: 100%;
         padding: 0rem;
