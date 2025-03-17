@@ -1,41 +1,17 @@
 <script setup lang="ts">
-  import { ref, watch, onMounted } from 'vue'
-  import { selection } from '../ts/selection'
-  import { Dots, isDotMasked } from '../ts/Dots'
-  import { Boxes } from '../ts/Boxes'
-  import { imgPath, imgURL, projectPath, projectName } from '../ts/file'
-  import { tempMaskMatrix } from '../ts/Masks'
-  import { api, handleError, pictureSelection } from '../ts/telegram'
-  import { checkBackendReady, sendImageData, sendSwitchImage } from '../ts/telegram'
-  import AnnotationSidebar from '../components/AnnotationSidebar.vue'
+  import { ref, watch, onMounted, computed } from 'vue'
+  import { selection } from '../ts/Selection'
+  import { Dots, send_dot, isDotMasked } from '../ts/Dots'
+  import { Boxes, send_box } from '../ts/Boxes'
+  import { imgPath, imgURL, isLoading, myFiles } from '../ts/Files'
+  import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
+  import { isSwitch, checkBackendReady, sendSwitchImage, sendResetData } from '../ts/Telegram'
+  import { sendPointData, sendUndoPointData, sendRedoPointData } from '../ts/Telegram'
+  import { sendBoxData, sendUndoBoxData, sendRedoBoxData } from '../ts/Telegram'
   import AwaitBackend from '../components/AwaitBackend.vue'
-
-  let pos = ref({
-    x: 0,
-    y: 0
-  })
-
-  let send_pos = ref({
-    x: 0,
-    y: 0    
-  })
+  import AwaitLoadImage from '../components/AwaitLoadImage.vue'
 
   let box_flag = false
-
-  let box = ref({
-      start_x: 0,
-      start_y: 0,
-      end_x: 0,
-      end_y: 0
-  })
-
-  let send_box = ref({
-      start_x: 0,
-      start_y: 0,
-      end_x: 0,
-      end_y: 0
-  })
-
   let img_size_x = 0
   let img_size_y = 0
   let zoom_x = 0
@@ -44,83 +20,117 @@
   let pos_y = 0
 
   const myCanvas = ref()
+  const myOperationCanvas = ref()
+  const AnnotationMask = computed(() => myFiles.getVisibleMaskfromPathList(myFiles.getPathIdfromPathList(imgPath.value)))
 
   onMounted(() => {
     draw_Image(imgURL.value) // 初始绘制图片
     checkBackendReady()
   })
 
+  // 异步初始化临时遮罩矩阵
+  function initializeTempMaskAsync(width: number, height: number): Promise<Array<Array<number>>> {
+    return new Promise((resolve) => {
+      const matrix: Array<Array<number>> = []
+      let i = 0
+      const chunkSize = 100 // 每次处理100行
+      function processChunk() {
+        const end = Math.min(i + chunkSize, height)
+        for (; i < end; i++) {
+          matrix[i] = new Array(width).fill(0)
+        }
+        if (i < height) {
+          setTimeout(processChunk, 0)
+        } else {
+          resolve(matrix)
+        }
+      }
+      processChunk()
+    })
+  }
+
   // 绘制图片
   function draw_Image(imageSrc: string) {
     // 确保图片清晰度，并初始化 canvas
     const canvas = myCanvas.value
+    const operationCanvas = myOperationCanvas.value
     canvas.width = canvas.clientWidth * window.devicePixelRatio
     canvas.height = canvas.clientHeight * window.devicePixelRatio
-    const ctx = canvas.getContext('2d')
+    operationCanvas.width = canvas.width
+    operationCanvas.height = canvas.height
+    const ctx = canvas.getContext('2d')!
+    const operationCtx = operationCanvas.getContext('2d')!
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+    operationCtx.scale(window.devicePixelRatio, window.devicePixelRatio)
 
-    let img = document.getElementById("bg") as HTMLImageElement;
+    let img = document.getElementById("bg") as HTMLImageElement
     img.src = imageSrc
 
-    img.onload = function() {
+    img.onload = async function() {
       pos_x = (canvas.offsetWidth-img.width)/2
       pos_y = (canvas.offsetHeight-img.height)/2
       zoom_x = img.width / img.naturalWidth
       zoom_y = img.height / img.naturalHeight
       img_size_x = img.naturalWidth
       img_size_y = img.naturalHeight
-      ctx.beginPath()
-      tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
+      if (!isWindowChange || tempMaskMatrix.value.length === 0) {
+        tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
+      }
+      else if (isWindowChange) {
+        drawPointAndBox()
+        drawMask(tempMaskMatrix.value)
+      }
     }
 
-    canvas.addEventListener('mousedown', function(e: MouseEvent) {
+    canvas.addEventListener('mousedown', async function(e: MouseEvent) {
       if (selection.value === 1) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           return
         }
-        pos.value = {
-            x: e.offsetX,
-            y: e.offsetY
-        }
-        send_pos.value = {
-            x: (pos.value.x - pos_x) / zoom_x,
-            y: (pos.value.y - pos_y) / zoom_y
+        send_dot.value = {
+            x: (e.offsetX - pos_x) / zoom_x,
+            y: (e.offsetY - pos_y) / zoom_y
         }
         drawPoint(e)
         if (!Dots.isDotted.value) {
             Dots.isDotted.value = true
         }
       }
-      else if (selection.value === 2) {
+      else if (selection.value === 2 && !box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           return
         }
         box_flag = true;
-        box.value.start_x = e.offsetX
-        box.value.start_y = e.offsetY
+        send_box.value.start_x = (e.offsetX - pos_x) / zoom_x
+        send_box.value.start_y = (e.offsetY - pos_y) / zoom_y
       }
     })
 
-    canvas.addEventListener('mouseup', function(e: MouseEvent) {
-      if (selection.value === 2) {
-        if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
+    canvas.addEventListener('mouseup', async function(e: MouseEvent) {
+      if (selection.value === 2 && box_flag) {
+        if ((e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) 
+          || (e.offsetX-send_box.value.start_x*zoom_x-pos_x <= 1 && e.offsetY-send_box.value.start_y*zoom_y-pos_y <= 1)) {
+          box_flag = false
+          ctx.beginPath()
+          ctx.clearRect(0,0,canvas.width,canvas.height)
           return
         }
         box_flag = false
-        box.value.end_x = e.offsetX
-        box.value.end_y = e.offsetY
-        send_box.value.start_x = (box.value.start_x - pos_x) / zoom_x
-        send_box.value.start_y = (box.value.start_y - pos_y) / zoom_y
-        send_box.value.end_x = (box.value.end_x - pos_x) / zoom_x
-        send_box.value.end_y = (box.value.end_y - pos_y) / zoom_y
-        Boxes.setBox(box.value.start_x, box.value.start_y, box.value.end_x, box.value.end_y)
-        sendBoxData()
+        send_box.value.end_x = (e.offsetX - pos_x) / zoom_x
+        send_box.value.end_y = (e.offsetY - pos_y) / zoom_y
+        Boxes.resetBox()
+        Dots.resetDots()
+        tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
+        Boxes.setBox(send_box.value.start_x, send_box.value.start_y, send_box.value.end_x, send_box.value.end_y)
+        const maskMatrix = await sendBoxData()
+        drawMask(maskMatrix)
       }
     })
 
-    canvas.addEventListener('mousemove', function(e: MouseEvent) {
+    canvas.addEventListener('mousemove', async function(e: MouseEvent) {
       if (selection.value === 2 && box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
+          box_flag = false
           return
         }
         drawBox(e)
@@ -132,301 +142,151 @@
   }
 
   // 画点
-  function drawPoint(e: MouseEvent) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    if (Dots.posIsDotted(e.offsetX, e.offsetY) == true) {
+  async function drawPoint(e: MouseEvent) {
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    if (Dots.posIsDotted(send_dot.value.x, send_dot.value.y) === true) {
       return
     }
-    ctx.arc(e.offsetX, e.offsetY, 5, 0, 2 * Math.PI)
-    ctx.globalAlpha = 1
-    if (isDotMasked.value) {
-      ctx.fillStyle = '#EE00EE'
-      ctx.fill()
-      Dots.addDot(e.offsetX, e.offsetY, 0)
-    } 
-    else {
-      ctx.fillStyle = '#00BFFF'
-      ctx.fill()
-      Dots.addDot(e.offsetX, e.offsetY, 1)
-    }
-    sendPointData()
+    operationCtx.beginPath()
+    operationCtx.globalAlpha = 1
+    operationCtx.arc(e.offsetX, e.offsetY, 5, 0, 2 * Math.PI)
+    operationCtx.fillStyle = isDotMasked.value ? '#EE00EE' : '#00BFFF'
+    operationCtx.fill()
+    Dots.addDot(send_dot.value.x, send_dot.value.y, isDotMasked.value ? 0 : 1)
+    const maskMatrix = await sendPointData()
+    drawMask(maskMatrix)
   }
 
-  // 仅用于绘制数组里点（undo操作删除的点）
+  // 在OperationCanvas上绘制点
   function drawPointByXY(x: number, y: number, dot_type: number) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    ctx.arc(x, y, 5, 0, 2 * Math.PI)
-    ctx.globalAlpha = 1
-    if (dot_type == 0) {
-      ctx.fillStyle = '#EE00EE'
-      ctx.fill()
-    } 
-    else if (dot_type == 1) {
-      ctx.fillStyle = '#00BFFF'
-      ctx.fill()
-    }
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    operationCtx.beginPath()
+    operationCtx.globalAlpha = 1
+    operationCtx.arc(x * zoom_x + pos_x, y * zoom_y + pos_y, 5, 0, 2 * Math.PI)
+    operationCtx.fillStyle = dot_type === 0 ? '#EE00EE' : '#00BFFF'
+    operationCtx.fill()
   }
 
   // 撤销点
-  function undoDot() {
+  async function undoDot() {
     let last_dot = Dots.undoDot()
     Dots.operation.value = 0
     if (last_dot) {
-      send_pos.value.x = (last_dot.x - pos_x) / zoom_x
-      send_pos.value.y = (last_dot.y - pos_y) / zoom_y
+      send_dot.value.x = last_dot.x
+      send_dot.value.y = last_dot.y
     }
-    sendUndoPointData()
+    const maskMatrix = await sendUndoPointData()
+    drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
   // 反撤销点
-  function redoDot() {
+  async function redoDot() {
     let last_dot_redo = Dots.redoDot()
     Dots.operation.value = 0
     if (last_dot_redo) {
-      send_pos.value.x = (last_dot_redo.x - pos_x) / zoom_x
-      send_pos.value.y = (last_dot_redo.y - pos_y) / zoom_y
+      send_dot.value.x = last_dot_redo.x
+      send_dot.value.y = last_dot_redo.y
     }
-    sendRedoPointData()
-  }
-
-  // 发送点请求
-  const sendPointData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 0,
-          "type": isDotMasked.value ? 0 : 1,
-          "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
-  }
-
-  // 发送撤销点请求
-  const sendUndoPointData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 1,
-          "type": isDotMasked.value ? 0 : 1,
-          "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
-  }
-
-  // 发送反撤销点请求
-  const sendRedoPointData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 3,
-          "type": isDotMasked.value ? 0 : 1,
-          "position": [[Math.floor(send_pos.value.x),Math.floor(send_pos.value.y)]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
+    const maskMatrix = await sendRedoPointData()
+    drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
   // 画框
   function drawBox(e: MouseEvent) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    Boxes.resetBox()
-    Dots.resetDots()
-    tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-    ctx.strokeStyle = '#EE00EE'
-    ctx.lineWidth = 2
-    ctx.globalAlpha = 1
-    ctx.strokeRect(box.value.start_x, box.value.start_y, e.offsetX - box.value.start_x, e.offsetY - box.value.start_y)
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    operationCtx.beginPath()
+    operationCtx.clearRect(0,0,operationCanvas.width,operationCanvas.height)
+    operationCtx.strokeStyle = '#EE00EE'
+    operationCtx.lineWidth = 2
+    operationCtx.globalAlpha = 1
+    operationCtx.strokeRect(send_box.value.start_x*zoom_x+pos_x, send_box.value.start_y*zoom_y+pos_y,
+       e.offsetX-send_box.value.start_x*zoom_x-pos_x, e.offsetY-send_box.value.start_y*zoom_y-pos_y)
   }
 
   // 撤销框
-  function undoBox() {
+  async function undoBox() {
     Boxes.undoBox()
+    Boxes.operation.value = 0
     Dots.resetDots()
-    sendUndoBoxData()
+    const maskMatrix = await sendUndoBoxData()
+    drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
   // 反撤销框
-  function redoBox() {
+  async function redoBox() {
     Boxes.redoBox()
-    sendRedoBoxData()
+    Boxes.operation.value = 0
+    const maskMatrix = await sendRedoBoxData()
+    drawMask(maskMatrix)
+    drawPointAndBox()
   }
 
-  // 发送框
-  const sendBoxData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 0,
-          "type": 2,
-          "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        }
-        ) 
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-        
-      }  catch (err: unknown) {
-    // 类型安全的错误转换
-    if (err instanceof Error) {
-      handleError(err)
-    } else {
-      handleError(String(err))
-    }
-  }  
-  }
-
-  // 发送撤销框
-  const sendUndoBoxData = async() => {
-    try {
-      const response = await api.post('/api/prompt',{
-          "operation": 1,
-          "type": 2,
-          "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        }
-      )
-      const maskMatrix = response.data.masks
-      drawMask(maskMatrix)
-      console.log('Prompt 操作结果:', response.data)
-      
-    }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }  
-  }
-
-  // 发送反撤销框
-  const sendRedoBoxData = async() => {
-    try {
-      const response = await api.post('/api/prompt',{
-        "operation": 3,
-        "type": 2,
-        "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
-        "project_name": projectName.value,
-        "storage_path": projectPath.value,
-        "image_name": imgPath.value.split('\\').pop().split('/').pop()
-      }
-      ) 
-      const maskMatrix = response.data.masks
-      drawMask(maskMatrix)
-      console.log('Prompt 操作结果:', response.data)
-      
-    }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }  
-  }
-
-  // 发送清空请求
-  const sendResetData = async() => {
-      try {
-        const response = await api.post('/api/prompt',{
-          "operation": 2,
-          "type": 0,
-          "position": [[0, 0]],
-          "project_name": projectName.value,
-          "storage_path": projectPath.value,
-          "image_name": imgPath.value.split('\\').pop().split('/').pop()
-        })
-        const maskMatrix = response.data.masks
-        drawMask(maskMatrix)
-        console.log('Prompt 操作结果:', response.data)
-      }  catch (err: unknown) {
-      // 类型安全的错误转换
-      if (err instanceof Error) {
-        handleError(err)
-      } else {
-        handleError(String(err))
-      }
-    }
-  }
-
-  // 绘制遮罩
-  function drawMask(masks : Array<Array<number>>) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.beginPath()
-    ctx.clearRect(0,0,canvas.width,canvas.height)
-    ctx.strokeStyle = '#EE00EE'
-    ctx.lineWidth = 2
-    ctx.globalAlpha = 1
-    ctx.strokeRect(Boxes.box.start_x, Boxes.box.start_y, Boxes.box.end_x - Boxes.box.start_x, Boxes.box.end_y - Boxes.box.start_y)
+  // 重绘框点
+  function drawPointAndBox() {
+    const operationCanvas = myOperationCanvas.value
+    const operationCtx = operationCanvas.getContext('2d')!
+    operationCtx.beginPath()
+    operationCtx.clearRect(0,0,operationCanvas.width,operationCanvas.height)
+    operationCtx.strokeStyle = '#EE00EE'
+    operationCtx.lineWidth = 2
+    operationCtx.globalAlpha = 1
+    operationCtx.strokeRect(Boxes.box.start_x*zoom_x+pos_x, Boxes.box.start_y*zoom_y+pos_y, 
+        (Boxes.box.end_x-Boxes.box.start_x)*zoom_x, (Boxes.box.end_y-Boxes.box.start_y)*zoom_y)
     Dots.dots.forEach(dot => {
       drawPointByXY(dot.x, dot.y, dot.dot_type)
     })
+  }
+
+  // 绘制遮罩
+  async function drawMask(mask: Array<Array<number>>) {
+    const canvas = myCanvas.value
+    const ctx = canvas.getContext('2d')!
+    ctx.beginPath()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    drawAnnotationMasks() // 绘制已标注Mask
+    if (mask.length === 0) {
+      tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
+      return
+    }
+    drawMaskHelp(mask, '#00BFFF', false)  // 绘制遮罩
+  }
+
+  // 绘制遮罩的具体实现函数
+  function drawMaskHelp(mask: Array<Array<number>>, color: string, isAnnotation: boolean) {
+    const canvas = myCanvas.value
+    const ctx = canvas.getContext('2d')
     ctx.globalCompositeOperation="source-over"
     ctx.globalAlpha = 0.1
-    ctx.fillStyle = '#00BFFF'
-    if (!masks) {
-      tempMaskMatrix.value = new Array(img_size_x).fill(null).map(() => new Array(img_size_y).fill(0))
-    }
-    for (let j = 0; j < masks.length; j++) {
-      for (let i = 0; i < masks[j].length; i++) {
-        if (masks[j][i] === 1) {
-          tempMaskMatrix.value[j][i] = 1
+    ctx.fillStyle = color
+    for (let j = 0; j < mask.length; j++) {
+      for (let i = 0; i < mask[j].length; i++) {
+        if (mask[j][i] === 1) {
+          if (!isAnnotation) tempMaskMatrix.value[j][i] = 1
           ctx.beginPath()
           ctx.arc(i*zoom_x+pos_x, j*zoom_y+pos_y, 1, 0 ,2 * Math.PI)
           ctx.fill()
         }
+        else if (mask[j][i] === 0 && !isAnnotation) {
+          tempMaskMatrix.value[j][i] = 0
+        }
       }
     }
   }
 
-  watch(Dots.operation, (newVal) => {
+  // 绘制已标注的可见的所有mask
+  function drawAnnotationMasks() {
+    for (const tempMask of AnnotationMask.value) {
+      drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color, true)
+    }
+  }
+
+  watch(Dots.operation, async(newVal) => {
     if (newVal === 1) {
       undoDot()
     }
@@ -435,14 +295,16 @@
       Boxes.resetBox()
       Dots.operation.value = 0
       Boxes.operation.value = 0
-      sendResetData()
+      const maskMatrix = await sendResetData()
+      drawMask(maskMatrix)
+      drawPointAndBox()
     }
     else if (newVal === 3) {
       redoDot()
     }
   })
 
-  watch(Boxes.operation, (newVal) => {
+  watch(Boxes.operation, async(newVal) => {
     if (newVal === 1) {
       undoBox()
     }
@@ -454,53 +316,92 @@
     }
   })
 
+  watch(isWindowChange, async(newVal) => {
+    if (newVal) {
+      draw_Image(imgURL.value)  // 重新加载并绘制图片
+      isWindowChange.value = false
+    }
+  })
+
   watch(imgPath, async(newVal)=> {
       if (newVal != null) {
-        await sendResetData()
         Dots.resetDots()
         Boxes.resetBox()
-        if (pictureSelection.value === 1) {
-          await sendImageData()
-        }
-        else if (pictureSelection.value === 2) {
-          await sendSwitchImage()
-        }
         imgURL.value = `file://${newVal}`
         isDotMasked.value = true
-        draw_Image(imgURL.value)  // 重新加载并绘制新图片
+        draw_Image(imgURL.value)  // 重新加载并绘制图片
+        if (isSwitch.value) {
+          const maskMatrix = await sendResetData()
+          drawMask(maskMatrix)
+          sendSwitchImage()
+          isSwitch.value = false
+        }
       }
+  })
+
+  watch(AnnotationMask, ()=> {
+    drawMask(tempMaskMatrix.value)
   })
 </script>
 
 <template>
-  <div style="display: flex; flex-direction: row;">
+  <div class="myContent">
     <div class="content">
       <canvas ref="myCanvas" class="content-canvas"></canvas>
+      <canvas ref="myOperationCanvas" class="operation-canvas"></canvas>
       <img :src=imgURL id="bg" alt="请上传图片" />
+      <AwaitLoadImage v-if="isLoading"></AwaitLoadImage>
     </div>
-    <AnnotationSidebar></AnnotationSidebar>
+    <AwaitBackend></AwaitBackend>
   </div>
-  <AwaitBackend></AwaitBackend>
 </template>
 
 <style scoped>
+    .myContent {
+        height: 100%;
+        border: 0.1rem #D3D3D3;
+        border-top-style: solid;
+        border-right-style: none;
+        border-bottom-style: solid;
+        border-left-style: none;
+        padding: 0rem;
+        margin: 0rem;
+        display: flex;
+        list-style-type: none;
+        flex-direction: column;
+        justify-content: start;
+        align-items: center;
+        text-align: center;
+        position: relative;
+    }
+
     .content {
+        width: 100%;
+        height: 100%;
+        padding: 0rem;
+        margin: 0rem;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        height: 70vh;
-        width: 70vw;
-        padding: 0rem;
         position: relative;
-        top: 5vh;
+        flex: 1;
     }
 
     .content .content-canvas {
         width: 100%;
         height: 100%;
-        margin: 0;
-        border: 1px solid #CCCCCC;
+        padding: 0rem;
+        margin: 0rem;
+        z-index: 2;
+        position: absolute;
+    }
+
+    .content .operation-canvas {
+        width: 100%;
+        height: 100%;
+        padding: 0rem;
+        margin: 0rem;
         z-index: 1;
         position: absolute;
     }
@@ -510,7 +411,9 @@
         height: auto;
         max-width: 100%;
         max-height: 100%;
+        object-fit: contain;
         margin: 0;
+        z-index: 0;
         position: absolute;
     }
 </style>

@@ -1,13 +1,16 @@
-// // isDotted.js
+// // Dots.js
 import { ref } from 'vue'
+import { DotItem } from './Types'
 
 export const isDotMasked = ref(true)
+
+export const send_dot = ref({ x: 0, y: 0 })
 
 export class Dots {
     static isDotted = ref(false);
     static isDotted_redo = ref(false);
-    static dots : Array<{x: number, y: number, dot_type: number}> = [];
-    static dots_redo : Array<{x: number, y: number, dot_type: number}> = [];
+    static dots : Array<DotItem> = [];
+    static dots_redo : Array<DotItem> = [];
     static operation = ref(0);  /* 0:add 1:undo 撤销 2:reset 清空当前操作 3:redo 反撤销 4:remove */
 
     // 测试用可删
@@ -40,7 +43,6 @@ export class Dots {
         if (this.dots_redo.length > 0) {
             this.isDotted_redo.value = true;
         }
-        this.getDots()
         return last_dot;
     }
 
@@ -55,7 +57,6 @@ export class Dots {
         if (this.dots.length > 0) {
             this.isDotted.value = true;
         }
-        this.getDots()
         return last_dot_redo;
     }
 

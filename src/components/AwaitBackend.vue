@@ -1,17 +1,52 @@
 <script setup lang="ts">
-    import { ref, watch } from 'vue'
-    import { initialized } from '../ts/telegram'
+    import { onMounted, ref, watch } from 'vue'
+    import { initialized } from '../ts/Telegram'
 
-    const isVisible = ref(true);
+    const isVisible = ref(true)
+    const isVisibleCanvas = ref(true)
+
+    const myCanvas = ref()
+    let canvasAlpha = 10
+
+    // 初始化画布
+    function initialCanvas() {
+        const canvas = myCanvas.value
+        const ctx = canvas?.getContext('2d')
+        ctx.beginPath()
+        ctx.clearRect(0,0,canvas.width,canvas.height)
+        ctx.beginPath()
+        ctx.fillStyle = '#409eff'
+        ctx.globalAlpha = canvasAlpha / 10
+        ctx.fillRect(0,0,canvas.width,canvas.height)
+    }
+
+    function modifyAlpha() {
+        if (canvasAlpha > 0) {
+            canvasAlpha--
+        }
+        initialCanvas()
+    }
+
+    onMounted(() => {
+        initialCanvas()
+    })
     
     watch(initialized, async(newVal)=>{
         if (newVal === true) {
             isVisible.value = false
+            const interval = setInterval(async() => {
+                modifyAlpha()
+                if (canvasAlpha === 0) {
+                    clearInterval(interval)
+                    isVisibleCanvas.value = false
+                }
+            }, 50)
         }
     })
 </script>
 
 <template>
+    <canvas ref="myCanvas" class="canvas" v-if="isVisibleCanvas"></canvas>
     <div id="loader-wrapper" v-if="isVisible">
         <div id="loader"></div>
             <div class="loader-section section-left"></div>
@@ -35,6 +70,16 @@
         background:#CCCCCC;
         color:#000000;
         padding:0.2em 0;
+    }
+
+    .canvas {
+        position:fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        z-index: 999;
     }
         
     #loader-wrapper {
@@ -131,7 +176,7 @@
         top:0;
         width:51%;
         height:100%;
-        background:#409eff;
+        /* background:#409eff; */
         z-index:1000;
         -webkit-transform:translateX(0);
         -ms-transform:translateX(0);
