@@ -1,14 +1,12 @@
 # readProject.py
 from fastapi import APIRouter, HTTPException
-from schemas.project_schema import ProjectRequest, ProjectResponse
+from schemas.project_schema import *
 from services.project_service import read_project
 
 router = APIRouter()
 
-@router.post("/read-project", response_model=ProjectResponse)
-def readproject(request: ProjectRequest):
+@router.post("/read-project", response_model=ProjectResponseforRead)
+def readproject(request: ProjectRequestforRead):
     """读取项目"""
-    project_path = read_project(request)
-    if not project_path:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return ProjectResponse(message="Project read successfully", project_path=project_path)
+    project_name, cache_path = read_project(request)
+    return ProjectResponseforRead(message="Project read successfully", project_name=project_name, cache_path=cache_path)
