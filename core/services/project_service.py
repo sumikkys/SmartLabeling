@@ -2,7 +2,7 @@
 import yaml
 from pathlib import Path
 from typing import Optional
-from schemas.project_schema import ProjectRequest
+from schemas.project_schema import *
 import json
 import numpy as np
 from cache.image_cache import *
@@ -46,10 +46,10 @@ def create_project_yaml(yaml_path: Path):
     with open(yaml_path, 'w') as file:
         yaml.dump(data, file, default_flow_style=False)
 
-def read_project(request:ProjectRequest ) -> Optional[str]:
+def read_project(request:ProjectRequestforRead ) -> tuple[str, str]:
     """读取已创建项目"""
-    project_name = request.project_name
-    project_path = Path(request.storage_path) / project_name
+    project_path = Path(request.project_path)
+    project_name = project_path.name
 
     if not project_path.exists():
         return f"Project {project_name} does not exist."
@@ -68,6 +68,6 @@ def read_project(request:ProjectRequest ) -> Optional[str]:
     image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
     current_image_id = data["current_image_id"]
     
-    return str(project_path)
+    return str(project_name), str(cache_path)
 
     
