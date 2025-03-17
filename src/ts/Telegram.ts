@@ -4,6 +4,7 @@ import axios, { AxiosError } from 'axios'
 import { send_dot, isDotMasked } from './Dots'
 import { send_box } from './Boxes'
 import { imgPath } from './Files'
+import { tempMaskMatrix } from './Masks'
 import { projectPath, projectName } from './Projects'
 
 // 判断是否是选择图片或上传图片
@@ -154,9 +155,9 @@ export const sendSwitchImage = async () => {
 }
 
 // 发送点请求
-export const sendPointData = async() : Promise<Array<Array<number>>> => {
+export const sendPointData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 0,
       "type": isDotMasked.value ? 0 : 1,
       "position": [[Math.floor(send_dot.value.x),Math.floor(send_dot.value.y)]],
@@ -165,7 +166,7 @@ export const sendPointData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -173,14 +174,13 @@ export const sendPointData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }
 }
 
 // 发送撤销点请求
-export const sendUndoPointData = async() : Promise<Array<Array<number>>> => {
+export const sendUndoPointData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 1,
       "type": isDotMasked.value ? 0 : 1,
       "position": [[Math.floor(send_dot.value.x),Math.floor(send_dot.value.y)]],
@@ -189,7 +189,7 @@ export const sendUndoPointData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -197,14 +197,13 @@ export const sendUndoPointData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }
 }
 
 // 发送反撤销点请求
-export const sendRedoPointData = async() : Promise<Array<Array<number>>> => {
+export const sendRedoPointData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 3,
       "type": isDotMasked.value ? 0 : 1,
       "position": [[Math.floor(send_dot.value.x),Math.floor(send_dot.value.y)]],
@@ -213,7 +212,7 @@ export const sendRedoPointData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -221,14 +220,13 @@ export const sendRedoPointData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }
 }
 
 // 发送框
-export const sendBoxData = async() : Promise<Array<Array<number>>> => {
+export const sendBoxData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 0,
       "type": 2,
       "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
@@ -237,7 +235,7 @@ export const sendBoxData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -245,14 +243,13 @@ export const sendBoxData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }
 }
 
 // 发送撤销框
-export const sendUndoBoxData = async() : Promise<Array<Array<number>>> => {
+export const sendUndoBoxData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 1,
       "type": 2,
       "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
@@ -261,7 +258,7 @@ export const sendUndoBoxData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -269,14 +266,13 @@ export const sendUndoBoxData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }  
 }
 
 // 发送反撤销框
-export const sendRedoBoxData = async() : Promise<Array<Array<number>>> => {
+export const sendRedoBoxData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 3,
       "type": 2,
       "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
@@ -285,7 +281,7 @@ export const sendRedoBoxData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     }) 
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -293,14 +289,13 @@ export const sendRedoBoxData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }  
 }
 
 // 发送清空请求
-export const sendResetData = async() : Promise<Array<Array<number>>> => {
+export const sendResetData = async() => {
   try {
-    const response = await api.post<{ masks: Array<Array<number>> }>('/api/prompt',{
+    const response = await api.post('/api/prompt',{
       "operation": 2,
       "type": 0,
       "position": [[0, 0]],
@@ -309,7 +304,7 @@ export const sendResetData = async() : Promise<Array<Array<number>>> => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
     })
     console.log('Prompt 操作结果:', response.data)
-    return response.data.masks
+    tempMaskMatrix.value = response.data.masks
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -317,7 +312,6 @@ export const sendResetData = async() : Promise<Array<Array<number>>> => {
     } else {
       handleError(String(err))
     }
-    throw err
   }
 }
 

@@ -23,10 +23,10 @@
 
     // 打开文件选择对话框并获取文件的绝对路径
     const filePath = ref<string | null>(null)
-    const openFileDialog = async () => {
+    const loadFilesDialog = async () => {
         try {
             // 调用主进程的文件选择功能
-            let paths : Array<string> | undefined = await (window as any).electron.openFileDialog()
+            let paths : Array<string> | undefined = await (window as any).electron.loadFilesDialog()
             if (paths) {
                 isLoading.value = true
                 isSwitch.value = false
@@ -62,10 +62,10 @@
     }
 
     // 其实是打开文件夹并选取
-    const createDirectory = async() => {
+    const selectDirectoryDialog = async() => {
         try {
             // 调用主进程的选取文件夹功能
-            const folderPath = await (window as any).electron.createDirectory()
+            const folderPath = await (window as any).electron.selectDirectoryDialog()
             if (folderPath) {
                 console.log("选择成功，文件保存路径为:", folderPath)
                 projectPath.value = folderPath // 存储文件夹路径
@@ -248,13 +248,13 @@
 <template>
     <ul class="myTools">
         <li class="project-list">
-            <button @click="createDirectory" class="project-btn">
+            <button @click="selectDirectoryDialog" class="project-btn">
                 <MyNewProjectIcon style="width: 2rem;"></MyNewProjectIcon>&nbsp;&nbsp;<span style="width: 4rem;">New</span>
             </button>
             <button class="project-btn">
                 <MyOpenProjectIcon style="width: 2rem;"></MyOpenProjectIcon>&nbsp;&nbsp;<span style="width: 4rem;">Open</span>
             </button>
-            <button @click="openFileDialog" class="project-btn">
+            <button @click="loadFilesDialog" class="project-btn">
                 <MyUpLoad style="width: 2rem;"></MyUpLoad>&nbsp;&nbsp;<span style="width: 4rem;">Upload</span>
             </button>
             <Prompt ref="promptRef"/>

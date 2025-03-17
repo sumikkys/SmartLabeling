@@ -10,7 +10,7 @@ const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let python: ChildProcess | null = null;
-const logStream = fs.createWriteStream(path.join(__dirname, 'backend.log'), { flags: 'a' });
+const logStream = fs.createWriteStream(path.join(__dirname, 'backend.log'), { flags: 'a' })
 
 
 // The built directory structure
@@ -71,21 +71,21 @@ function createPythonProcess() {
   python = spawn('python', ['./core/main.py', '--host', 'localhost', '--port', '8232'], { stdio: ['ignore', 'pipe', 'pipe'] });
 
   python.stdout?.on('data', (data) => {
-    const message = data.toString();
-    console.log(`Backend: ${message}`);
-    logStream.write(`[STDOUT] ${message}\n`);
-  });
+    const message = data.toString()
+    console.log(`Backend: ${message}`)
+    logStream.write(`[STDOUT] ${message}\n`)
+  })
 
   python.stderr?.on('data', (data) => {
-    const message = data.toString();
-    console.log(`Backend: ${message}`);
-    logStream.write(`[STDERR] ${message}\n`);
-  });
+    const message = data.toString()
+    console.log(`Backend: ${message}`)
+    logStream.write(`[STDERR] ${message}\n`)
+  })
 
   python.on('close', (code) => {
     console.log(`Python 进程退出，退出码: ${code}`);
     logStream.write(`[EXIT] Python 进程退出，退出码: ${code}\n`);
-  });
+  })
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -95,7 +95,7 @@ app.on('window-all-closed', () => {
   // 在非macOS平台上，关闭所有窗口时退出应用程序
   if (process.platform !== 'darwin') {
     if (python) {
-      python.kill();  // 关闭 Python 进程
+      python.kill()  // 关闭 Python 进程
     }
     app.quit()
     win = null
@@ -112,7 +112,7 @@ app.on('activate', () => {
 
 app.on('before-quit', () => {
   if (python) {
-    python.kill();  // 关闭 Python 进程
+    python.kill()  // 关闭 Python 进程
   }
 })
 
@@ -124,36 +124,38 @@ app.whenReady().then(() => {
   createPythonProcess()
 
   // 监听渲染进程的文件选择请求
-  ipcMain.handle('dialog:openFile', async () => {
+  ipcMain.handle('loadFiles', async () => {
     const result = await dialog.showOpenDialog({
+      title: '选择上传的图片',
       properties: ['openFile', 'multiSelections'],  // 选择文件并允许多选
       filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },]
     })
 
     if (result.filePaths) {
-      return result.filePaths  // 返回第一个文件的绝对路径
+      return result.filePaths  // 返回文件的绝对路径
     }
     return null
   })
 
-  ipcMain.handle('createDirectory', async () => {
+  ipcMain.handle('selectDirectory', async () => {
     try {
-        // 弹出文件夹选择对话框，让用户选择文件夹的保存路径
-        const result = await dialog.showOpenDialog({
-            properties: ['openDirectory', 'createDirectory'] // 允许创建新文件夹
-        });
-  
-        if (!result.canceled) {
-            const folderPath = result.filePaths[0]
-            // 检查文件夹是否存在，如果不存在就创建
-            if (!fs.existsSync(folderPath)) {
-                fs.mkdirSync(folderPath, { recursive: true });
-            }
-            return folderPath // 返回文件夹路径
+      // 弹出文件夹选择对话框，让用户选择文件夹的保存路径
+      const result = await dialog.showOpenDialog({
+        title: '选择新项目的保存路径',
+        properties: ['openDirectory', 'createDirectory'] // 选择文件夹
+      })
+
+      if (!result.canceled) {
+        const folderPath = result.filePaths[0]
+        // 检查文件夹是否存在，如果不存在就创建
+        if (!fs.existsSync(folderPath)) {
+          fs.mkdirSync(folderPath, { recursive: true })
         }
+        return folderPath // 返回文件夹路径
+      }
     } catch (error) {
-        console.error('创建文件夹失败:', error)
-        throw error
+      console.error('创建文件夹失败:', error)
+      throw error
     }
   })
 })

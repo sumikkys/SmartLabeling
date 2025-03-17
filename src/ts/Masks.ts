@@ -1,5 +1,5 @@
 // Masks.ts
-import {ref} from 'vue'
+import { ref } from 'vue'
 import { Dots } from './Dots'
 import { MaskItem } from './Types'
 
