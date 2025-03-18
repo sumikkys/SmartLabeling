@@ -70,7 +70,7 @@
 
     img.onload = async function() {
       pos_x = (maskCanvas.clientWidth-img.width)/2
-      pos_y = (maskCanvas.clientWidth-img.height)/2
+      pos_y = (maskCanvas.clientHeight-img.height)/2
       zoom_x = img.width / img.naturalWidth
       zoom_y = img.height / img.naturalHeight
       img_size_x = img.naturalWidth
