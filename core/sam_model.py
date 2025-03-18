@@ -39,7 +39,7 @@ class SamEncoder:
         else:
             raise ValueError("Invalid device, please use 'cuda' or 'cpu' device.")
 
-        print("loading encoder model...")
+        print("loading SAM Encoder model...")
         self.session = ort.InferenceSession(model_path,
                                             opt,
                                             providers=provider,
@@ -145,7 +145,7 @@ class SamDecoder:
         else:
             raise ValueError("Invalid device, please use 'cuda' or 'cpu' device.")
 
-        print("loading decoder model...")
+        print("loading SAM Decoder model...")
         self.mask_threshold = 0.5
         self.img_size = (img_size, img_size)
         self.session = ort.InferenceSession(model_path,
