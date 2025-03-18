@@ -7,8 +7,6 @@ from typing import Any, Union
 from copy import deepcopy
 from utils import *
 from fastapi import FastAPI, File, UploadFile
-from PIL import Image
-import io
 import numpy as np
 import cv2
 from routers import polling
@@ -164,4 +162,29 @@ class CLIPTextEncoder:
         return self.session.run(None, {self.input_name: texts})[0]
     
     def __call__(self, texts,*args, **kwds):
-        return self._encode(texts)
+        return self._encode(texts) # 输出维度为（num_texts, embedding_dim）因此矩阵乘法时需要.T
+    
+    def zeroshot_classifier(self, classnames, modality='Xray', device = 'cpu'):
+        zeroshot_weights = []
+        for classname in classnames:
+            texts = []
+            for template in tqdm(med_templates):
+                # 检查模板中是否包含modality占位符
+                if '{modality}' in template:
+                    text = template.format(text=classname, modality=modality)
+                else:
+                    # 如果没有modality占位符，只替换classname
+                    text = template.format(text=classname)
+                # print(text)
+                texts.append(text)  # format with class
+            class_embeddings = self._encode(texts)  # embed with text encoder
+            class_embeddings = normalize(class_embeddings)  # normalize embeddings
+            class_embedding = np.mean(class_embeddings, axis=0)
+            # 归一化结果向量 (替代 torch 的 embedding.norm())
+            class_embedding_norm = np.sqrt(np.sum(class_embedding * class_embedding))
+            class_embedding = class_embedding / (class_embedding_norm + 1e-8)  # 添加小量避免除零
+            zeroshot_weights.append(class_embedding)
+            
+        zeroshot_weights = np.column_stack(zeroshot_weights)
+        return zeroshot_weights # 输出维度为（embedding_dim, num_classes）因此矩阵乘法时无需.T
+
