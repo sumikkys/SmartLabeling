@@ -69,8 +69,8 @@
     img.src = imageSrc
 
     img.onload = async function() {
-      pos_x = (maskCanvas.offsetWidth-img.width)/2
-      pos_y = (maskCanvas.offsetHeight-img.height)/2
+      pos_x = (maskCanvas.clientWidth-img.width)/2
+      pos_y = (maskCanvas.clientWidth-img.height)/2
       zoom_x = img.width / img.naturalWidth
       zoom_y = img.height / img.naturalHeight
       img_size_x = img.naturalWidth
@@ -255,10 +255,16 @@
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
     drawAnnotationMasks() // 绘制已标注Mask
     if (tempMaskMatrix.value.length === 0) {
-      tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
       return
     }
     drawMaskHelp(tempMaskMatrix.value, '#00BFFF')  // 绘制遮罩
+  }
+
+  // 绘制已标注的可见的所有mask
+  function drawAnnotationMasks() {
+    for (const tempMask of AnnotationMask.value) {
+      drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color)
+    }
   }
 
   // 绘制遮罩的具体实现函数
@@ -276,13 +282,6 @@
           maskCtx.fill()
         }
       }
-    }
-  }
-
-  // 绘制已标注的可见的所有mask
-  function drawAnnotationMasks() {
-    for (const tempMask of AnnotationMask.value) {
-      drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color)
     }
   }
 
