@@ -1,5 +1,7 @@
 {
   "name": "smartlabeling",
+  "author": "SmartLabeling Team",
+  "description": "About A data labeling tool with AI from Segment Anything and other models.",
   "private": true,
   "version": "0.0.1",
   "type": "module",

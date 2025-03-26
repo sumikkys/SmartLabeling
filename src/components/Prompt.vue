@@ -28,6 +28,7 @@
     } else {
       isVisible.value = false
       resolvePromise?.(inputValue.value)
+      console.log(props)
       resolvePromise = null!
     }
   }
