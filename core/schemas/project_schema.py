@@ -10,3 +10,11 @@ class ProjectRequest(BaseModel):
 class ProjectResponse(BaseModel):
     message: str
     project_path: str
+
+class ProjectRequestforRead(BaseModel):
+    project_path: str
+    
+class ProjectResponseforRead(BaseModel):
+    message: str
+    project_name: str
+    cache_path: str
