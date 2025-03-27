@@ -15,9 +15,10 @@ export const initialized = ref(false)
 
 // Axios 实例配置
 export const api = axios.create({
-  headers: {
-    'Content-Type': 'application/json'
-  }
+  baseURL: import.meta.env.PROD
+    ? 'http://localhost:8232' // 生产环境直接访问
+    : '/api', // 开发环境由Vite代理
+  headers: { 'Content-Type': 'application/json' }
 })
 
 // 定义 error 变量
@@ -80,7 +81,7 @@ export const handleError = (err: EnhancedError) => {
 export const checkBackendReady = () => {
   const interval = setInterval(async() => {
     try {
-      const response = await api.get('/api/status') 
+      const response = await api.get('/status') 
       if(response.data.initialized){
         clearInterval(interval)
         console.log("后端初始化完成！")
@@ -100,7 +101,7 @@ export const checkBackendReady = () => {
 // 发送图片
 export const sendImageData = async (path : string) => {
   try {
-      const response = await api.post('/api/uploadimage',{
+      const response = await api.post('/uploadimage',{
         "image_path": path,
         "project_name": projectName.value,
         "storage_path": projectPath.value,
@@ -120,7 +121,7 @@ export const sendImageData = async (path : string) => {
 // 创建新项目
 export const CreateNewProject = async () => {
   try {
-    const response = await api.post('/api/create-project', {
+    const response = await api.post('/create-project', {
       "project_name": projectName.value,
       "storage_path": projectPath.value
     })
@@ -138,7 +139,7 @@ export const CreateNewProject = async () => {
 // 切换图片
 export const sendSwitchImage = async () => {
   try {
-    const response = await api.post('/api/switch_image', {
+    const response = await api.post('/switch_image', {
       "image_name": imgPath.value.split('\\').pop().split('/').pop(),
       "project_name": projectName.value,
       "project_path": projectPath.value 
@@ -157,7 +158,7 @@ export const sendSwitchImage = async () => {
 // 发送点请求
 export const sendPointData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 0,
       "type": isDotMasked.value ? 0 : 1,
       "position": [[Math.floor(send_dot.value.x),Math.floor(send_dot.value.y)]],
@@ -180,7 +181,7 @@ export const sendPointData = async() => {
 // 发送撤销点请求
 export const sendUndoPointData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 1,
       "type": isDotMasked.value ? 0 : 1,
       "position": [[Math.floor(send_dot.value.x),Math.floor(send_dot.value.y)]],
@@ -203,7 +204,7 @@ export const sendUndoPointData = async() => {
 // 发送反撤销点请求
 export const sendRedoPointData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 3,
       "type": isDotMasked.value ? 0 : 1,
       "position": [[Math.floor(send_dot.value.x),Math.floor(send_dot.value.y)]],
@@ -226,7 +227,7 @@ export const sendRedoPointData = async() => {
 // 发送框
 export const sendBoxData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 0,
       "type": 2,
       "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
@@ -249,7 +250,7 @@ export const sendBoxData = async() => {
 // 发送撤销框
 export const sendUndoBoxData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 1,
       "type": 2,
       "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
@@ -272,7 +273,7 @@ export const sendUndoBoxData = async() => {
 // 发送反撤销框
 export const sendRedoBoxData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 3,
       "type": 2,
       "position": [Math.floor(send_box.value.start_x),Math.floor(send_box.value.start_y),Math.floor(send_box.value.end_x),Math.floor(send_box.value.end_y)],
@@ -295,7 +296,7 @@ export const sendRedoBoxData = async() => {
 // 发送清空请求
 export const sendResetData = async() => {
   try {
-    const response = await api.post('/api/prompt',{
+    const response = await api.post('/prompt',{
       "operation": 2,
       "type": 0,
       "position": [[0, 0]],
@@ -318,7 +319,7 @@ export const sendResetData = async() => {
 // 增加mask
 export const sendAddMaskAnnotation = async (classId: number, masks: Array<Array<number>>) : Promise<string> => {
   try {
-    const response = await api.post<{ mask_id: string }>('/api/annotation-tools/prompt', {
+    const response = await api.post<{ mask_id: string }>('/annotation-tools/prompt', {
       "operation": 0,
       "mask_data": {
         "class_id": classId,
@@ -341,7 +342,7 @@ export const sendAddMaskAnnotation = async (classId: number, masks: Array<Array<
 // 删除mask
 export const sendRemoveMaskAnnotation = async (maskId: string) => {
   try {
-    const response = await api.post('/api/annotation-tools/prompt', {
+    const response = await api.post('/annotation-tools/prompt', {
       "operation": 1,
       "mask_id": maskId
     })
@@ -359,7 +360,7 @@ export const sendRemoveMaskAnnotation = async (maskId: string) => {
 // 获取类别
 export const sendGetCategoryAnnotation = async () => {
   try {
-    const response = await api.post('/api/annotation-tools/prompt', {
+    const response = await api.post('/annotation-tools/prompt', {
       "operation": 3
     })
     console.log('annotation-tools/prompt 操作结果:', response.data)
@@ -376,7 +377,7 @@ export const sendGetCategoryAnnotation = async () => {
 // 增加类别
 export const sendAddCategoryAnnotation = async (className: string) => {
   try {
-    const response = await api.post('/api/annotation-tools/prompt', {
+    const response = await api.post('/annotation-tools/prompt', {
       "operation": 4,
       "class_name": className
     })
@@ -394,7 +395,7 @@ export const sendAddCategoryAnnotation = async (className: string) => {
 // 导出当前图片Mask
 export const sendExportCurrentImage = async (imageId: Array<number>) => {
   try {
-    const response = await api.post('/api/export', {
+    const response = await api.post('/export', {
       "image_id": imageId,
       "project_name": projectName.value,
       "project_path": projectPath.value
@@ -413,7 +414,7 @@ export const sendExportCurrentImage = async (imageId: Array<number>) => {
 // 导出所有图片Mask
 export const sendExoprtAllImage = async (imageIdList: Array<number>) => {
   try {
-    const response = await api.post('/api/export', {
+    const response = await api.post('/export', {
       "image_id": imageIdList,
       "project_name": projectName.value,
       "project_path": projectPath.value

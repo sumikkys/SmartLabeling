@@ -12,3 +12,5 @@ core/__pycache__/*.pyc
 dist-electron/
 projects/
 core/images/
+dist/
+release/

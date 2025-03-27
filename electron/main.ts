@@ -1,12 +1,12 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import { createRequire } from 'node:module'
+// import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 // import { exec, ChildProcess} from 'child_process'
 import { spawn, ChildProcess } from 'child_process'
 import fs from 'fs'
 
-const require = createRequire(import.meta.url)
+// const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let python: ChildProcess | null = null;
@@ -39,7 +39,9 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       allowRunningInsecureContent: true, // 允许不安全的内容加载
-      webSecurity: false // 禁用web安全策略
+      webSecurity: false,                // 禁用web安全策略
+      nodeIntegration: true,
+      contextIsolation: true,
     },
   })
 
@@ -68,7 +70,16 @@ function createWindow() {
 
 function createPythonProcess() {
   // 启动 Python 后端
-  python = spawn('python', ['./core/main.py', '--host', 'localhost', '--port', '8232'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  const pythonScriptPath = app.isPackaged 
+    ? path.join(process.resourcesPath!, 'core/main.py')
+    : path.join(__dirname, '../core/main.py');
+
+  const args = [pythonScriptPath, '--host', 'localhost', '--port', '8232'];
+
+  python = spawn('python', args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: true
+  });
 
   python.stdout?.on('data', (data) => {
     const message = data.toString()
