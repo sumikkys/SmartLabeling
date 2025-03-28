@@ -28,10 +28,15 @@ export class Files {
     }
 
     // 添加mask
-    addMasktoPathList(path_id: number, maskId: string, maskName: string) {
+    addMasktoPathList(path_id: number, maskId: string, maskName: string, maskMatrix?: Array<Array<number>>) {
         const className = maskName.substring(0, maskName.lastIndexOf("_"));
         const maskColor = this.list.value.at(path_id)?.class.getClassColorByClassName(className) ?? "";
-        return this.list.value.at(path_id)?.mask.addMask(maskId, maskName, maskColor);
+        if (maskMatrix) {
+            return this.list.value.at(path_id)?.mask.addMask(maskId, maskName, maskColor, maskMatrix);
+        }
+        else {
+            return this.list.value.at(path_id)?.mask.addMask(maskId, maskName, maskColor);
+        }
     }
 
     // 添加class
@@ -98,6 +103,14 @@ export class Files {
         return this.list.value.at(path_id)?.class.getClassList()?.slice() ?? [];
     }
 
+    // removeAll() {
+    //     this.list.value.forEach(file => {
+    //         file.path = ""
+    //         delete file.mask
+    //         delete file.class
+    //     })
+    // }
+
     // 根据索引删除某一张图片的某一个mask
     removeMaskfromPathList(path_id: number, index_id: number) {
         this.list.value.at(path_id)?.mask.removeMaskfromMaskList(index_id);
@@ -110,3 +123,15 @@ export class Files {
 }
 
 export const myFiles = new Files()
+
+export const ClassColor = [
+    "#FF0000",
+    "#FF8000",
+    "#FFFF00",
+    "#00FF00",
+    "#0000FF",
+    "#7F00FF",
+    "#FF00FF",
+    "#FF007F",
+    "#808080"
+]

@@ -19,7 +19,7 @@
   let pos_x = 0
   let pos_y = 0
 
-  const myCanvas = ref()
+  const myMaskCanvas = ref()
   const myOperationCanvas = ref()
   const AnnotationMask = computed(() => myFiles.getVisibleMaskfromPathList(myFiles.getPathIdfromPathList(imgPath.value)))
 
@@ -49,40 +49,44 @@
     })
   }
 
-  // 绘制图片
+  // 初始化图片
   function draw_Image(imageSrc: string) {
     // 确保图片清晰度，并初始化 canvas
-    const canvas = myCanvas.value
+    const maskCanvas = myMaskCanvas.value
     const operationCanvas = myOperationCanvas.value
-    canvas.width = canvas.clientWidth * window.devicePixelRatio
-    canvas.height = canvas.clientHeight * window.devicePixelRatio
-    operationCanvas.width = canvas.width
-    operationCanvas.height = canvas.height
-    const ctx = canvas.getContext('2d')!
+    const maskCtx = maskCanvas.getContext('2d')!
     const operationCtx = operationCanvas.getContext('2d')!
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio)
+
+    maskCanvas.width = maskCanvas.clientWidth * window.devicePixelRatio
+    maskCanvas.height = maskCanvas.clientHeight * window.devicePixelRatio
+    operationCanvas.width = maskCanvas.width
+    operationCanvas.height = maskCanvas.height
+
+    maskCtx.scale(window.devicePixelRatio, window.devicePixelRatio)
     operationCtx.scale(window.devicePixelRatio, window.devicePixelRatio)
 
     let img = document.getElementById("bg") as HTMLImageElement
     img.src = imageSrc
 
     img.onload = async function() {
-      pos_x = (canvas.offsetWidth-img.width)/2
-      pos_y = (canvas.offsetHeight-img.height)/2
+      pos_x = (maskCanvas.clientWidth-img.width)/2
+      pos_y = (maskCanvas.clientHeight-img.height)/2
       zoom_x = img.width / img.naturalWidth
       zoom_y = img.height / img.naturalHeight
       img_size_x = img.naturalWidth
       img_size_y = img.naturalHeight
-      if (!isWindowChange || tempMaskMatrix.value.length === 0) {
-        tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
-      }
-      else if (isWindowChange) {
-        drawPointAndBox()
-        drawMask(tempMaskMatrix.value)
-      }
+
+      requestIdleCallback(async () => {
+        if (!isWindowChange || tempMaskMatrix.value.length === 0) {
+          tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
+        } else if (isWindowChange) {
+          drawPointAndBox()
+          drawMask()
+        }
+      })
     }
 
-    canvas.addEventListener('mousedown', async function(e: MouseEvent) {
+    maskCanvas.addEventListener('mousedown', async function(e: MouseEvent) {
       if (selection.value === 1) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           return
@@ -106,13 +110,13 @@
       }
     })
 
-    canvas.addEventListener('mouseup', async function(e: MouseEvent) {
+    maskCanvas.addEventListener('mouseup', async function(e: MouseEvent) {
       if (selection.value === 2 && box_flag) {
         if ((e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) 
           || (e.offsetX-send_box.value.start_x*zoom_x-pos_x <= 1 && e.offsetY-send_box.value.start_y*zoom_y-pos_y <= 1)) {
           box_flag = false
-          ctx.beginPath()
-          ctx.clearRect(0,0,canvas.width,canvas.height)
+          maskCtx.beginPath()
+          maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height)
           return
         }
         box_flag = false
@@ -122,12 +126,12 @@
         Dots.resetDots()
         tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
         Boxes.setBox(send_box.value.start_x, send_box.value.start_y, send_box.value.end_x, send_box.value.end_y)
-        const maskMatrix = await sendBoxData()
-        drawMask(maskMatrix)
+        await sendBoxData()
+        drawMask()
       }
     })
 
-    canvas.addEventListener('mousemove', async function(e: MouseEvent) {
+    maskCanvas.addEventListener('mousemove', async function(e: MouseEvent) {
       if (selection.value === 2 && box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           box_flag = false
@@ -154,8 +158,8 @@
     operationCtx.fillStyle = isDotMasked.value ? '#EE00EE' : '#00BFFF'
     operationCtx.fill()
     Dots.addDot(send_dot.value.x, send_dot.value.y, isDotMasked.value ? 0 : 1)
-    const maskMatrix = await sendPointData()
-    drawMask(maskMatrix)
+    await sendPointData()
+    drawMask()
   }
 
   // 在OperationCanvas上绘制点
@@ -177,8 +181,8 @@
       send_dot.value.x = last_dot.x
       send_dot.value.y = last_dot.y
     }
-    const maskMatrix = await sendUndoPointData()
-    drawMask(maskMatrix)
+    await sendUndoPointData()
+    drawMask()
     drawPointAndBox()
   }
 
@@ -190,8 +194,8 @@
       send_dot.value.x = last_dot_redo.x
       send_dot.value.y = last_dot_redo.y
     }
-    const maskMatrix = await sendRedoPointData()
-    drawMask(maskMatrix)
+    await sendRedoPointData()
+    drawMask()
     drawPointAndBox()
   }
 
@@ -213,8 +217,8 @@
     Boxes.undoBox()
     Boxes.operation.value = 0
     Dots.resetDots()
-    const maskMatrix = await sendUndoBoxData()
-    drawMask(maskMatrix)
+    await sendUndoBoxData()
+    drawMask()
     drawPointAndBox()
   }
 
@@ -222,8 +226,8 @@
   async function redoBox() {
     Boxes.redoBox()
     Boxes.operation.value = 0
-    const maskMatrix = await sendRedoBoxData()
-    drawMask(maskMatrix)
+    await sendRedoBoxData()
+    drawMask()
     drawPointAndBox()
   }
 
@@ -244,45 +248,40 @@
   }
 
   // 绘制遮罩
-  async function drawMask(mask: Array<Array<number>>) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')!
-    ctx.beginPath()
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+  async function drawMask() {
+    const maskCanvas = myMaskCanvas.value
+    const maskCtx = maskCanvas.getContext('2d')!
+    maskCtx.beginPath()
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
     drawAnnotationMasks() // 绘制已标注Mask
-    if (mask.length === 0) {
-      tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
+    if (tempMaskMatrix.value.length === 0) {
       return
     }
-    drawMaskHelp(mask, '#00BFFF', false)  // 绘制遮罩
-  }
-
-  // 绘制遮罩的具体实现函数
-  function drawMaskHelp(mask: Array<Array<number>>, color: string, isAnnotation: boolean) {
-    const canvas = myCanvas.value
-    const ctx = canvas.getContext('2d')
-    ctx.globalCompositeOperation="source-over"
-    ctx.globalAlpha = 0.1
-    ctx.fillStyle = color
-    for (let j = 0; j < mask.length; j++) {
-      for (let i = 0; i < mask[j].length; i++) {
-        if (mask[j][i] === 1) {
-          if (!isAnnotation) tempMaskMatrix.value[j][i] = 1
-          ctx.beginPath()
-          ctx.arc(i*zoom_x+pos_x, j*zoom_y+pos_y, 1, 0 ,2 * Math.PI)
-          ctx.fill()
-        }
-        else if (mask[j][i] === 0 && !isAnnotation) {
-          tempMaskMatrix.value[j][i] = 0
-        }
-      }
-    }
+    drawMaskHelp(tempMaskMatrix.value, '#00BFFF')  // 绘制遮罩
   }
 
   // 绘制已标注的可见的所有mask
   function drawAnnotationMasks() {
     for (const tempMask of AnnotationMask.value) {
-      drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color, true)
+      drawMaskHelp(tempMask.mask_matrix, tempMask.mask_color)
+    }
+  }
+
+  // 绘制遮罩的具体实现函数
+  function drawMaskHelp(mask: Array<Array<number>>, color: string) {
+    const maskCanvas = myMaskCanvas.value
+    const maskCtx = maskCanvas.getContext('2d')
+    maskCtx.globalCompositeOperation="source-over"
+    maskCtx.globalAlpha = 0.1
+    maskCtx.fillStyle = color
+    for (let j = 0; j < mask.length; j++) {
+      for (let i = 0; i < mask[j].length; i++) {
+        if (mask[j][i] === 1) {
+          maskCtx.beginPath()
+          maskCtx.arc(i*zoom_x+pos_x, j*zoom_y+pos_y, 1, 0 ,2 * Math.PI)
+          maskCtx.fill()
+        }
+      }
     }
   }
 
@@ -295,8 +294,8 @@
       Boxes.resetBox()
       Dots.operation.value = 0
       Boxes.operation.value = 0
-      const maskMatrix = await sendResetData()
-      drawMask(maskMatrix)
+      await sendResetData()
+      drawMask()
       drawPointAndBox()
     }
     else if (newVal === 3) {
@@ -324,30 +323,33 @@
   })
 
   watch(imgPath, async(newVal)=> {
-      if (newVal != null) {
+    if (newVal != null) {
+      imgURL.value = `file://${newVal}`
+      isDotMasked.value = true
+      draw_Image(imgURL.value)  // 重新加载并绘制图片
+      if (isSwitch.value) {
         Dots.resetDots()
         Boxes.resetBox()
-        imgURL.value = `file://${newVal}`
-        isDotMasked.value = true
-        draw_Image(imgURL.value)  // 重新加载并绘制图片
-        if (isSwitch.value) {
-          const maskMatrix = await sendResetData()
-          drawMask(maskMatrix)
-          sendSwitchImage()
-          isSwitch.value = false
-        }
+        await sendResetData()
+        drawMask()
+        drawPointAndBox()
+        sendSwitchImage()
+        isSwitch.value = false
       }
+    }
   })
 
-  watch(AnnotationMask, ()=> {
-    drawMask(tempMaskMatrix.value)
+  watch(AnnotationMask, async()=> {
+    if (!isSwitch.value) {
+      drawMask()
+    }
   })
 </script>
 
 <template>
   <div class="myContent">
     <div class="content">
-      <canvas ref="myCanvas" class="content-canvas"></canvas>
+      <canvas ref="myMaskCanvas" class="mask-canvas"></canvas>
       <canvas ref="myOperationCanvas" class="operation-canvas"></canvas>
       <img :src=imgURL id="bg" alt="请上传图片" />
       <AwaitLoadImage v-if="isLoading"></AwaitLoadImage>
@@ -357,63 +359,64 @@
 </template>
 
 <style scoped>
-    .myContent {
-        height: 100%;
-        border: 0.1rem #D3D3D3;
-        border-top-style: solid;
-        border-right-style: none;
-        border-bottom-style: solid;
-        border-left-style: none;
-        padding: 0rem;
-        margin: 0rem;
-        display: flex;
-        list-style-type: none;
-        flex-direction: column;
-        justify-content: start;
-        align-items: center;
-        text-align: center;
-        position: relative;
-    }
+  .myContent {
+    height: 100%;
+    border: 0.1rem #D3D3D3;
+    border-top-style: solid;
+    border-right-style: none;
+    border-bottom-style: solid;
+    border-left-style: none;
+    padding: 0rem;
+    margin: 0rem;
+    display: flex;
+    list-style-type: none;
+    flex-direction: column;
+    justify-content: start;
+    align-items: center;
+    text-align: center;
+    position: relative;
+  }
 
-    .content {
-        width: 100%;
-        height: 100%;
-        padding: 0rem;
-        margin: 0rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        flex: 1;
-    }
+  .content {
+    width: 100%;
+    height: 100%;
+    padding: 0rem;
+    margin: 0rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex: 1;
+  }
 
-    .content .content-canvas {
-        width: 100%;
-        height: 100%;
-        padding: 0rem;
-        margin: 0rem;
-        z-index: 2;
-        position: absolute;
-    }
+  .content .mask-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 0rem;
+    margin: 0rem;
+    z-index: 3;
+    position: absolute;
+  }
 
-    .content .operation-canvas {
-        width: 100%;
-        height: 100%;
-        padding: 0rem;
-        margin: 0rem;
-        z-index: 1;
-        position: absolute;
-    }
+  .content .operation-canvas {
+    width: 100%;
+    height: 100%;
+    padding: 0rem;
+    margin: 0rem;
+    z-index: 2;
+    position: absolute;
+  }
 
-    .content #bg {
-        width: auto;
-        height: auto;
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        margin: 0;
-        z-index: 0;
-        position: absolute;
-    }
+  .content #bg {
+    width: auto;
+    height: auto;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    padding: 0rem;
+    margin: 0rem;
+    z-index: 1;
+    position: absolute;
+  }
 </style>
