@@ -119,7 +119,7 @@ export const sendImageData = async (path : string) => {
 };
 
 // 创建新项目
-export const CreateNewProject = async () => {
+export const sendCreateNewProject = async () => {
   try {
     const response = await api.post('/create-project', {
       "project_name": projectName.value,
@@ -133,6 +133,25 @@ export const CreateNewProject = async () => {
     } else {
       handleError(String(err))
     }
+  }
+}
+
+// 打开项目
+export const sendOpenProject = async (): Promise<string> => {
+  try {
+    const response = await api.post<{ cache_path: string}>('/read-project', {
+      "project_path": projectPath.value + '\\' + projectName.value
+    })
+    console.log('read-project 操作结果:', response.data)
+    return response.data.cache_path
+  } catch (err: unknown) {
+    // 类型安全的错误转换
+    if (err instanceof Error) {
+      handleError(err)
+    } else {
+      handleError(String(err))
+    }
+    throw err
   }
 }
 

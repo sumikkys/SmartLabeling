@@ -25,6 +25,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
 })
 
 contextBridge.exposeInMainWorld('electron', {
-  loadFilesDialog: () => ipcRenderer.invoke('loadFiles'), // 调用主进程的文件选择对话框
-  selectDirectoryDialog: () => ipcRenderer.invoke('selectDirectory'),
+  loadFilesDialog: () => ipcRenderer.invoke('loadFiles'),
+  selectDirectoryDialog: (title: string) => ipcRenderer.invoke('selectDirectory', title),
+  readJSON: (path: string) => ipcRenderer.invoke('read-json-file', path),
 })

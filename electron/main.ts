@@ -72,14 +72,14 @@ function createPythonProcess() {
   // 启动 Python 后端
   const pythonScriptPath = app.isPackaged 
     ? path.join(process.resourcesPath!, 'core/main.py')
-    : path.join(__dirname, '../core/main.py');
+    : path.join(__dirname, '../core/main.py')
 
-  const args = [pythonScriptPath, '--host', 'localhost', '--port', '8232'];
+  const args = [pythonScriptPath, '--host', 'localhost', '--port', '8232']
 
   python = spawn('python', args, {
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: true
-  });
+  })
 
   python.stdout?.on('data', (data) => {
     const message = data.toString()
@@ -136,6 +136,7 @@ app.whenReady().then(() => {
 
   // 监听渲染进程的文件选择请求
   ipcMain.handle('loadFiles', async () => {
+    // 弹出文件选择对话框，让用户选择上传文件
     const result = await dialog.showOpenDialog({
       title: '选择上传的图片',
       properties: ['openFile', 'multiSelections'],  // 选择文件并允许多选
@@ -148,11 +149,12 @@ app.whenReady().then(() => {
     return null
   })
 
-  ipcMain.handle('selectDirectory', async () => {
+  // 监听渲染进程的文件夹选择请求
+  ipcMain.handle('selectDirectory', async (_, title: string) => {
     try {
       // 弹出文件夹选择对话框，让用户选择文件夹的保存路径
       const result = await dialog.showOpenDialog({
-        title: '选择新项目的保存路径',
+        title: title || '',
         properties: ['openDirectory', 'createDirectory'] // 选择文件夹
       })
 
@@ -168,5 +170,24 @@ app.whenReady().then(() => {
       console.error('创建文件夹失败:', error)
       throw error
     }
+  })
+
+  // 监听渲染进程的读取json文件请求
+  ipcMain.handle('read-json-file', (_, filePath: string) => {
+    return new Promise((resolve, reject) => {
+      fs.readFile(filePath, 'utf-8', (error, data) => {
+        if (error) {
+          console.error('读取失败:', error)
+          reject(new Error(`文件读取失败: ${error.message}`))
+          return
+        }
+        try {
+          const parsed = JSON.parse(data)
+          resolve(parsed)
+        } catch (parseError) {
+          reject(new Error(`JSON解析失败: ${(parseError as Error).message}`))
+        }
+      })
+    })
   })
 })

@@ -4,19 +4,22 @@
   const props = defineProps({
     title: { type: String, default: '请输入新建项目名称' },
     placeholder: { type: String, default: '' },
-    successText: { type: String, default: '创建成功！' }
+    successText: { type: String, default: '创建成功！' },
+    openText: { type: String, default: '打开项目成功！' },
   })
 
   const isVisible = ref(false)
   const inputValue = ref('')
   const showSuccess = ref(false)
+  const showOpen = ref(false)
   let resolvePromise: (value: string | null) => void
   const projectInput = ref<HTMLInputElement | null>(null)
 
-  const show = (): Promise<string | null> => {
+  const show = (isOpen: boolean): Promise<string | null> => {
     isVisible.value = true
     inputValue.value = ''
     showSuccess.value = false
+    showOpen.value = isOpen
     return new Promise((resolve) => {
       resolvePromise = resolve
     })
@@ -52,19 +55,29 @@
 <template>
   <div v-if="isVisible" class="prompt-modal">
     <div class="prompt-content">
-      <div v-if="!showSuccess">
-        <h3>{{ title }}</h3>
-        <input v-model="inputValue" ref="projectInput" :placeholder="placeholder" @keyup.enter="handleConfirm">
+      <div v-if="showOpen">
+        <div>
+          <h3 style="color: #67c23a; font-size: 2.5rem;">{{ openText }}</h3>
+        </div>
+        <div class="button-group">
+          <button v-if="!showSuccess" @click="handleCancel">确定</button>
+        </div>
       </div>
       <div v-else>
-        <h3 style="color: #67c23a; font-size: 2.5rem;">{{ successText }}</h3>
-        <p class="success-message">新创建项目名称：{{ inputValue }}</p>
-      </div>
-      <div class="button-group">
-        <button @click="handleConfirm">
-          {{ showSuccess ? '关闭' : '确定' }}
-        </button>
-        <button v-if="!showSuccess" @click="handleCancel">取消</button>
+        <div v-if="!showSuccess">
+          <h3>{{ title }}</h3>
+          <input v-model="inputValue" ref="projectInput" :placeholder="placeholder" @keyup.enter="handleConfirm">
+        </div>
+        <div v-else>
+          <h3 style="color: #67c23a; font-size: 2.5rem;">{{ successText }}</h3>
+          <p class="success-message">新创建项目名称：{{ inputValue }}</p>
+        </div>
+        <div class="button-group">
+          <button @click="handleConfirm">
+            {{ showSuccess ? '关闭' : '确定' }}
+          </button>
+          <button v-if="!showSuccess" @click="handleCancel">取消</button>
+        </div>
       </div>
     </div>
   </div>
