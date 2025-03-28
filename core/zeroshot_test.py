@@ -4,7 +4,7 @@ import numpy as np
 from utils import normalize, softmax, top_k
 
 classes = ["kidney", "liver", "lung"]
-image = cv2.imread("/Users/sumipeng/Programming/AI/SmartLabeling/core/images/amos_0507_31.png")
+image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/amos_0507_31.png")
 
 prompt = {
     'points': np.array([[[200,300]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
