@@ -62,10 +62,10 @@
             projectName.value = projectPath.value.split('\\').pop().split('/').pop()
             projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
             const cachePath = await sendOpenProject()
-            const cacheJsonText = await (window as any).electron.readJSON(cachePath)
+            let cacheJsonText = await (window as any).electron.readJSON(cachePath)
             console.log(cacheJsonText)
-            console.log(cacheJsonText.length)
-            saveJsonText(cacheJsonText)
+            await saveJsonText(cacheJsonText)
+            cacheJsonText = null as unknown as Record<string, any> // 手动清除
         } 
         else {
             console.log('用户取消输入')
@@ -94,6 +94,7 @@
         isLoading.value = true
         isSwitch.value = false
         await nextTick()        // 等待 DOM 更新
+        // myFiles.removeAll()
         for (const path of Object.keys(cacheJsonText.image_id_cache)) {
             myFiles.addPathtoPathList(path)
         }
