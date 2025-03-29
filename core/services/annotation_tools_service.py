@@ -1,7 +1,10 @@
 # annotation_tools_service.py
 from cache.image_cache import *  
 from schemas.annotation_tools_schema import *
-
+from utils import normalize, softmax, top_k
+import cv2
+import numpy as np
+from initialize_model import clip_text_encoder, clip_vision_encoder
 
 # 在文件开头添加全局计数器
 class GlobalCounter:
@@ -29,6 +32,49 @@ global_counter = GlobalCounter()
 class AnnotationService:
     def __init__(self):
         global image_data_cache
+    
+    def add_mask_clip(self, image_id: int, mask_data: MaskData) -> MaskResponse:
+        """使用CLIP添加一个新的标注 Mask"""
+        classes = []
+        for class_id, class_name in image_class_cache.items():
+            classes.append(class_name)
+        prefix = "a photo of a "
+        texts = [prefix + class_name for class_name in classes]
+        image_id = get_current_id()
+        image_path = find_key_by_value(image_id_cache, image_id)
+        image = cv2.imread(image_path)
+
+        prompt = {
+            'points': np.array([[[200,300]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
+            'labels': np.ones((1,1),dtype=np.int32), # (1,1) 即 (batch_size, num_points) 现在只有标签为1的点
+        }
+
+        image_features = clip_vision_encoder(np.array(image), prompt)
+
+        texts_features = clip_text_encoder(texts)
+
+        # 对图像和文本特征进行归一化
+        image_features_normalized = normalize(image_features)
+        text_features_normalized = normalize(texts_features)
+        # 计算相似度
+        similarity = 100.0 * np.matmul(image_features_normalized, text_features_normalized.T)
+        similarity_softmax = softmax(similarity, axis=1)
+        values, indices = top_k(similarity_softmax, 3)
+        print("\n相似度结果:")
+        result = []
+        for i, (val, idx) in enumerate(zip(values[0], indices[0])):
+            result.append(texts[idx])
+            print(f"排名 {i+1}: {texts[idx]} (相似度: {val:.4f})")
+
+        
+        if image_id not in image_data_cache:
+            return False
+        mask_id = global_counter.get_next_mask_id(image_id, mask_data.class_id)
+        if image_data_cache[image_id]["masks"].get(mask_data.class_id) is None:
+            image_data_cache[image_id]["masks"][mask_data.class_id] = {}  
+        image_data_cache[image_id]["masks"][mask_data.class_id][mask_id] = mask_data.masks
+        return MaskResponse(mask_id=mask_id, class_id=mask_data.class_id)
+
     def add_mask(self,image_id: int, mask_data: MaskData) -> MaskResponse:
         """添加一个新的标注 Mask"""
         if image_id not in image_data_cache:

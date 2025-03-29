@@ -69,6 +69,7 @@ class CLIPVisionEncoder:
                                     self.input_name[1]: y,
                                     self.input_name[2]: z})
         print("warmup finish!")
+        polling.initialized = True
 
     def transform(self, image: np.ndarray) -> np.ndarray:
         """

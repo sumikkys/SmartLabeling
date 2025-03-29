@@ -7,6 +7,7 @@ from typing import Dict
 from pathlib import Path
 import json
 from cache.image_cache import *
+import os
 
 def update_yaml(yaml_path: str, image_id: int) -> str:
     try:
@@ -100,6 +101,8 @@ def export_annotations(request: ExportRequest) -> Dict[str, str]:
 
 def export_cache(request: ExportRequest) -> str:
     cache_path = Path(request.project_path) / request.project_name / "cache.json"
+    if cache_path.exists():
+        os.remove(cache_path)
     data = {
         "image_id_cache": image_id_cache,
         "image_data_cache": image_data_cache,

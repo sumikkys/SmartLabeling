@@ -3,8 +3,8 @@ import cv2
 import numpy as np
 from utils import normalize, softmax, top_k
 
-texts = ["a photo of a landscape","a photo of a medical CT scan", "a photo of a cute cat"]
-image = cv2.imread("/Users/sumipeng/Programming/AI/SmartLabeling/core/images/amos_0507_31.png")
+texts = ["a photo of a landscape","a photo of a medical CT scan", "a photo of a anime girl"]
+image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/test_image_jpg.jpg")
 
 prompt = {
     'points': np.array([[[200,300]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
