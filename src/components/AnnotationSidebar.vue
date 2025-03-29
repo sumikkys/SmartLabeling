@@ -125,12 +125,10 @@
     // 添加Mask
     const AddMaskAnnotation = async() => {
         const mask_id = await sendAddMaskAnnotation(AllClassList.value.indexOf(CurrentClass.value)+1, tempMaskMatrix.value)
-        const maskName = CurrentClass.value+'_'+ mask_id.split('_').pop()
-        const index = CurrentClassItems.value.findIndex(tempClass => tempClass.class_name === CurrentClass.value)
-        let colorNum = 0
-        if (index === -1) {
-            colorNum = CurrentClassItems.value.length
-        }
+        const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
+        const colorNum = CurrentClassItems.value.find(tempClass => 
+			tempClass.class_name === CurrentClass.value
+        ) ? CurrentClassItems.value.length : 0
         myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
         myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), mask_id, maskName)
     }

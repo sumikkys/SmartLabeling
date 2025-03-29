@@ -49,6 +49,11 @@ export class Files {
         this.list.value.at(path_id)?.mask.setMaskVisiblefromMaskList(index_id)
     }
 
+    // 获取list长度
+    getListLength() {
+        return this.list.value.length;
+    }
+
     // 根据索引获取图片文件
     getPathfromPathList(id: number) {
         return this.list.value.at(id)?.path;
