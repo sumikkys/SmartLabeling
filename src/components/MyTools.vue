@@ -62,13 +62,13 @@
             AllClassList.value = []
         }
         else if (isOpen) {
-            projectName.value = projectPath.value.split('\\').pop().split('/').pop()
-            projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
             const cachePath = await sendOpenProject()
             let cacheJsonText = await (window as any).electron.readJSON(cachePath)
             console.log(cacheJsonText)
             await saveJsonText(cacheJsonText)
             cacheJsonText = null as unknown as Record<string, any> // 手动清除
+            projectName.value = projectPath.value.split('\\').pop().split('/').pop()
+            projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
         } 
         else {
             console.log('用户取消输入')

@@ -140,7 +140,7 @@ export const sendCreateNewProject = async () => {
 export const sendOpenProject = async (): Promise<string> => {
   try {
     const response = await api.post<{ cache_path: string}>('/read-project', {
-      "project_path": projectPath.value + '\\' + projectName.value
+      "project_path": projectPath.value
     })
     console.log('read-project 操作结果:', response.data)
     return response.data.cache_path
