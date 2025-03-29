@@ -46,28 +46,36 @@ def create_project_yaml(yaml_path: Path):
     with open(yaml_path, 'w') as file:
         yaml.dump(data, file, default_flow_style=False)
 
-def read_project(request:ProjectRequestforRead ) -> tuple[str, str]:
+def read_project(request: ProjectRequestforRead) -> tuple[str, str]:
     """读取已创建项目"""
-    project_path = Path(request.project_path)
+    project_path = Path(request.project_path).resolve()
     project_name = project_path.name
 
     if not project_path.exists():
-        return f"Project {project_name} does not exist."
-    
+        return f"Project {project_name} does not exist.", ""
+
     cache_path = project_path / "cache.json"
 
     if not cache_path.exists():
-        return f"Cache file for project {project_name} does not exist."
-    
-    with open(cache_path, 'rb') as f:
-        data = json.load(f)
-    global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
-    image_id_cache = data["image_id_cache"]
-    image_data_cache = data["image_data_cache"]
-    image_class_cache = data["image_class_cache"]
-    image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
-    current_image_id = data["current_image_id"]
-    
-    return str(project_name), str(cache_path)
+        return "", f"Cache file for project {project_name} does not exist."
+
+    try:
+        # 加载缓存文件内容
+        with open(cache_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        # 更新全局缓存变量
+        global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+        image_id_cache = data["image_id_cache"]
+        image_data_cache = data["image_data_cache"]
+        image_class_cache = data["image_class_cache"]
+        image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
+        current_image_id = data["current_image_id"]
+
+        # 返回规范化后的路径
+        return str(project_name), str(cache_path.resolve())
+
+    except Exception as e:
+        return "", f"Error reading cache file: {str(e)}"
 
     
