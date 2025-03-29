@@ -56,7 +56,8 @@
         if (result) {
             console.log('用户输入:', result)
             projectName.value = result
-            sendCreateNewProject()
+            await sendCreateNewProject()
+            myFiles.removeAll()
         }
         else if (isOpen) {
             projectName.value = projectPath.value.split('\\').pop().split('/').pop()
@@ -94,7 +95,7 @@
         isLoading.value = true
         isSwitch.value = false
         await nextTick()        // 等待 DOM 更新
-        // myFiles.removeAll()
+        myFiles.removeAll()
         for (const path of Object.keys(cacheJsonText.image_id_cache)) {
             myFiles.addPathtoPathList(path)
         }

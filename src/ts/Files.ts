@@ -103,13 +103,10 @@ export class Files {
         return this.list.value.at(path_id)?.class.getClassList()?.slice() ?? [];
     }
 
-    // removeAll() {
-    //     this.list.value.forEach(file => {
-    //         file.path = ""
-    //         delete file.mask
-    //         delete file.class
-    //     })
-    // }
+    // 清空内存
+    removeAll() {
+        this.list.value = []
+    }
 
     // 根据索引删除某一张图片的某一个mask
     removeMaskfromPathList(path_id: number, index_id: number) {
