@@ -4,9 +4,11 @@
 	import { Dots, isDotMasked } from '../ts/Dots'
 	import { Boxes } from '../ts/Boxes'
 	import { imgPath, isLoading, myFiles, ClassColor } from '../ts/Files'
+	import { tempMaskMatrix } from '../ts/Masks'
 	import { AllClassList } from '../ts/Classes'
 	import { projectPath, projectName } from '../ts/Projects'
-	import { isSwitch, sendCreateNewProject, sendOpenProject, sendImageData, sendSwitchImage } from '../ts/Telegram'
+	import { isSwitch, sendCreateNewProject, sendOpenProject, 
+		sendImageData, sendSwitchImage, sendExoprtAllImage } from '../ts/Telegram'
 	import Prompt from '../components/Prompt.vue'
 	import MyClick from './icons/MyClickIcon.vue'
 	import MyBox from './icons/MyBoxIcon.vue'
@@ -40,6 +42,7 @@
 					await sendImageData(path)
 				}
 				await sendSwitchImage()
+				await sendExoprtAllImage(myFiles.getAllPathIdfromPathList())
 				isLoading.value = false
 			} else {
 				filePath.value = '未选择文件'
@@ -57,28 +60,31 @@
 			console.log('用户输入:', result)
 			projectName.value = result
 			await sendCreateNewProject()
-			if (myFiles.getListLength() !== 0) myFiles.removeAll()
-			imgPath.value = ''
-			AllClassList.value = []
+
+			// 清空之前项目缓存
+			await removeAllData()
 		}
 		else if (isOpen) {
 			const cachePath = await sendOpenProject()
-			let cacheJsonText = await (window as any).electron.readJSON(cachePath)
-			console.log(cacheJsonText)
-			await saveJsonText(cacheJsonText)
-			cacheJsonText = null as unknown as Record<string, any> // 手动清除
 			projectName.value = projectPath.value.split('\\').pop().split('/').pop()
-			// projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
-			// projectPath.value = path.dirname(projectPath.value);
 			// 同时处理 Windows 和 Mac/Linux 路径分隔符
 			const lastBackslashIndex = projectPath.value.lastIndexOf('\\');
 			const lastForwardSlashIndex = projectPath.value.lastIndexOf('/');
 			const lastSeparatorIndex = Math.max(lastBackslashIndex, lastForwardSlashIndex);
-
 			// 如果找到了分隔符，则截取到该位置
 			if (lastSeparatorIndex !== -1) {
 				projectPath.value = projectPath.value.slice(0, lastSeparatorIndex);
 			}
+
+			let cacheJsonText = await (window as any).electron.readJSON(cachePath)
+			console.log(cacheJsonText)
+
+			// 清空之前项目缓存
+			await removeAllData()
+			isLoading.value = true
+			await nextTick()
+			await saveJsonText(cacheJsonText)
+			cacheJsonText = null as unknown as Record<string, any> // 手动清除
 		}
 		else {
 			console.log('用户取消输入')
@@ -106,15 +112,6 @@
 	// 读取json文件内容
 	const saveJsonText = async(cacheJsonText: any) => {
 		try {
-			isLoading.value = true
-			isSwitch.value = false
-			// 等待 DOM 更新
-			await nextTick()
-
-			// 清空之前项目缓存
-			if (myFiles.getListLength() !== 0) myFiles.removeAll()
-			AllClassList.value = []
-
 			// 读取所有图片
 			for (const path of Object.keys(cacheJsonText.image_id_cache)) {
 				myFiles.addPathtoPathList(path)
@@ -146,6 +143,17 @@
 		} finally {
 			isLoading.value = false
 		}
+	}
+
+	const removeAllData = async() => {
+		Dots.resetDots()
+		Boxes.resetBox()
+		tempMaskMatrix.value = []
+		if (myFiles.getListLength() !== 0) myFiles.removeAll()
+		isSwitch.value = false
+		imgPath.value = ''
+		AllClassList.value = []
+		await nextTick()
 	}
 
 	function MouseClickBTN(value: string) {

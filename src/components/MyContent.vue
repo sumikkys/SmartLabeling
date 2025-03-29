@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watch, onMounted, computed } from 'vue'
+  import { ref, watch, onMounted, computed, nextTick } from 'vue'
   import { selection } from '../ts/Selection'
   import { Dots, send_dot, isDotMasked } from '../ts/Dots'
   import { Boxes, send_box } from '../ts/Boxes'
@@ -335,6 +335,7 @@
         drawPointAndBox()
         sendSwitchImage()
         isSwitch.value = false
+        await nextTick()
       }
     }
   })
