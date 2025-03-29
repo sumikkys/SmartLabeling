@@ -48,3 +48,5 @@ export class Classes {
         return currentList.at(targetIndex)?.class_color;
     }
 }
+
+export const AllClassList = ref<Array<string>>([])

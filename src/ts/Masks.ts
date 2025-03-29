@@ -1,5 +1,5 @@
 // Masks.ts
-import {ref} from 'vue'
+import { ref } from 'vue'
 import { Dots } from './Dots'
 import { MaskItem } from './Types'
 
@@ -9,11 +9,11 @@ export const tempMaskMatrix = ref<Array<Array<number>>>([])
 export class Masks {
     private mask_list = ref<Array<MaskItem>>([]);
 
-    addMask(maskId: string, maskName: string, maskColor: string) {
+    addMask(maskId: string, maskName: string, maskColor: string, maskMatrix?: Array<Array<number>>) {
         const currentList = this.mask_list.value ?? [];
         const newList = [...currentList];
         newList.push({
-            mask_matrix: tempMaskMatrix.value,
+            mask_matrix: maskMatrix ? maskMatrix : tempMaskMatrix.value,
             mask_id: maskId,
             mask_name: maskName,
             mask_color: maskColor,

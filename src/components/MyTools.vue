@@ -1,11 +1,12 @@
 <script setup lang="ts">
-    import { ref , watch } from 'vue'
+    import { ref , watch, computed, nextTick } from 'vue'
     import { selection } from '../ts/Selection'
     import { Dots, isDotMasked } from '../ts/Dots'
     import { Boxes } from '../ts/Boxes'
-    import { imgPath, isLoading, myFiles } from '../ts/Files'
+    import { imgPath, isLoading, myFiles, ClassColor } from '../ts/Files'
+    import { AllClassList } from '../ts/Classes'
     import { projectPath, projectName } from '../ts/Projects'
-    import { isSwitch, CreateNewProject, sendImageData, sendSwitchImage } from '../ts/Telegram'
+    import { isSwitch, sendCreateNewProject, sendOpenProject, sendImageData, sendSwitchImage } from '../ts/Telegram'
     import Prompt from '../components/Prompt.vue'
     import MyClick from './icons/MyClickIcon.vue'
     import MyBox from './icons/MyBoxIcon.vue'
@@ -23,10 +24,10 @@
 
     // 打开文件选择对话框并获取文件的绝对路径
     const filePath = ref<string | null>(null)
-    const openFileDialog = async () => {
+    const loadFilesDialog = async () => {
         try {
             // 调用主进程的文件选择功能
-            let paths : Array<string> | undefined = await (window as any).electron.openFileDialog()
+            let paths : Array<string> | undefined = await (window as any).electron.loadFilesDialog()
             if (paths) {
                 isLoading.value = true
                 isSwitch.value = false
@@ -49,33 +50,80 @@
     }
 
     // 打开输入项目名弹窗
-    const promptRef = ref<{ show: () => Promise<string | null> }>()
-    const showPrompt = async () => {
-        const result = await promptRef.value?.show()
+    const promptRef = ref<{ show: (isOpen: boolean) => Promise<string | null> }>()
+    const showPrompt = async (isOpen: boolean) => {
+        const result = await promptRef.value?.show(isOpen)
         if (result) {
             console.log('用户输入:', result)
             projectName.value = result
-            CreateNewProject()
-        } else {
+            sendCreateNewProject()
+        }
+        else if (isOpen) {
+            projectName.value = projectPath.value.split('\\').pop().split('/').pop()
+            projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
+            const cachePath = await sendOpenProject()
+            let cacheJsonText = await (window as any).electron.readJSON(cachePath)
+            console.log(cacheJsonText)
+            await saveJsonText(cacheJsonText)
+            cacheJsonText = null as unknown as Record<string, any> // 手动清除
+        } 
+        else {
             console.log('用户取消输入')
         }
     }
 
-    // 其实是打开文件夹并选取
-    const createDirectory = async() => {
+    // 打开文件夹选择对话框并选取项目的路径
+    const selectDirectoryDialog = async(isOpen: boolean) => {
         try {
+            const dialogTitle = isOpen ? '打开项目' : '选择新项目的保存路径'
             // 调用主进程的选取文件夹功能
-            const folderPath = await (window as any).electron.createDirectory()
+            const folderPath = await (window as any).electron.selectDirectoryDialog(dialogTitle)
             if (folderPath) {
-                console.log("选择成功，文件保存路径为:", folderPath)
+                console.log('选择成功，文件保存路径为:', folderPath)
                 projectPath.value = folderPath // 存储文件夹路径
-                showPrompt()
+                showPrompt(isOpen)
             } else {
                 console.log('未选择文件夹路径')
             }
         } catch (error) {
             console.error('保存路径选择失败:', error)
         }
+    }
+
+    const saveJsonText = async(cacheJsonText: any) => {
+        isLoading.value = true
+        isSwitch.value = false
+        await nextTick()        // 等待 DOM 更新
+        // myFiles.removeAll()
+        for (const path of Object.keys(cacheJsonText.image_id_cache)) {
+            myFiles.addPathtoPathList(path)
+        }
+        imgPath.value = myFiles.getPathfromPathList(cacheJsonText.current_image_id)
+        AllClassList.value = []
+        for (const className of Object.values(cacheJsonText.image_class_cache)) {
+            AllClassList.value.push(className as string)
+        }
+        let index = 0
+        for (const image_masks of Object.values(cacheJsonText.image_data_cache)) {
+            if (Object.keys((image_masks as any).masks).length > 0) {
+                const CurrentClassName = computed(() => myFiles.getClassItemsFromPath(index))
+                for (const mask of Object.values((image_masks as any).masks)) {
+                    const maskId = Object.keys(mask as any)[0]
+                    const currentClassName = AllClassList.value.at(parseInt(maskId.substring(0, maskId.lastIndexOf('_')))-1)??''
+                    const maskName = currentClassName+'_'+ maskId.split('_').pop()
+                    const maskMatrix = Object.values(mask as any)[0]
+                    const colorIndex = CurrentClassName.value.findIndex(tempClass => tempClass.class_name === currentClassName)
+                    let colorNum = 0
+                    if (colorIndex === -1) {
+                        colorNum = CurrentClassName.value.length
+                    }
+                    myFiles.addClasstoPathList(index, currentClassName, ClassColor[colorNum])
+                    myFiles.addMasktoPathList(index, maskId, maskName, (maskMatrix as Array<Array<number>>))
+                }
+            }
+            index++
+        }
+        isLoading.value = false
     }
 
     function MouseClickBTN(value: string) {
@@ -248,13 +296,13 @@
 <template>
     <ul class="myTools">
         <li class="project-list">
-            <button @click="createDirectory" class="project-btn">
+            <button @click="selectDirectoryDialog(false)" class="project-btn">
                 <MyNewProjectIcon style="width: 2rem;"></MyNewProjectIcon>&nbsp;&nbsp;<span style="width: 4rem;">New</span>
             </button>
-            <button class="project-btn">
+            <button @click="selectDirectoryDialog(true)" class="project-btn">
                 <MyOpenProjectIcon style="width: 2rem;"></MyOpenProjectIcon>&nbsp;&nbsp;<span style="width: 4rem;">Open</span>
             </button>
-            <button @click="openFileDialog" class="project-btn">
+            <button @click="loadFilesDialog" class="project-btn">
                 <MyUpLoad style="width: 2rem;"></MyUpLoad>&nbsp;&nbsp;<span style="width: 4rem;">Upload</span>
             </button>
             <Prompt ref="promptRef"/>

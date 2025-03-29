@@ -11,7 +11,6 @@ from PIL import Image
 import io
 import numpy as np
 import cv2
-from routers import polling
 
 
 class SamEncoder:
@@ -39,7 +38,7 @@ class SamEncoder:
         else:
             raise ValueError("Invalid device, please use 'cuda' or 'cpu' device.")
 
-        print("loading encoder model...")
+        print("loading SAM Encoder model...")
         self.session = ort.InferenceSession(model_path,
                                             opt,
                                             providers=provider,
@@ -68,7 +67,7 @@ class SamEncoder:
         for i in tqdm(range(epoch)):
             self.session.run(None, {self.input_name: x})
         print("warmup finish!")
-        polling.initialized = True
+        
 
     def transform(self, img: np.ndarray) -> np.ndarray:
         """image transform
@@ -145,7 +144,7 @@ class SamDecoder:
         else:
             raise ValueError("Invalid device, please use 'cuda' or 'cpu' device.")
 
-        print("loading decoder model...")
+        print("loading SAM Decoder model...")
         self.mask_threshold = 0.5
         self.img_size = (img_size, img_size)
         self.session = ort.InferenceSession(model_path,

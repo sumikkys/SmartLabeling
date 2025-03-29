@@ -1,7 +1,8 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
-    import { imgPath, myFiles } from '../ts/Files'
+    import { imgPath, myFiles, ClassColor } from '../ts/Files'
     import { tempMaskMatrix } from '../ts/Masks'
+    import { AllClassList } from '../ts/Classes'
     import { isSwitch } from '../ts/Telegram'
     import { sendAddMaskAnnotation, sendRemoveMaskAnnotation, 
         sendAddCategoryAnnotation, sendExportCurrentImage, sendExoprtAllImage } from '../ts/Telegram'
@@ -28,18 +29,6 @@
     const ImageList = computed(() => myFiles.getAllPathNamefromPathList())
     const MaskItems = computed(() => myFiles.getMaskItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
     const CurrentClassItems = computed(() => myFiles.getClassItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
-    const AllClass = ref<Array<string>>([])
-    const ClassColor = [
-        "#FF0000",
-        "#FF8000",
-        "#FFFF00",
-        "#00FF00",
-        "#0000FF",
-        "#7F00FF",
-        "#FF00FF",
-        "#FF007F",
-        "#808080"
-    ]
 
     // 切换图片
     const SwitchImage = (id : number) => {
@@ -107,16 +96,16 @@
     // 确认并添加Class
     const handleConfirm = () => {
         showAddOneClass.value = !showAddOneClass.value
-        if(!AllClass.value.includes(AddOneClassName.value)){
+        if(!AllClassList.value.includes(AddOneClassName.value)){
             sendAddCategoryAnnotation(AddOneClassName.value)
-            AllClass.value.push(AddOneClassName.value)
+            AllClassList.value.push(AddOneClassName.value)
             AddOneClassName.value = ''      // 清除输入框内的文字残留
         }
     }
 
     // Class搜索栏功能实现
     const AllClassFilter = computed(() => {
-        return AllClass.value.filter((item) => {
+        return AllClassList.value.filter((item) => {
             return item.toLowerCase().includes(searchQuery.value.toLowerCase())
         })
     })
@@ -135,8 +124,8 @@
 
     // 添加Mask
     const AddMaskAnnotation = async() => {
-        const mask_id = await sendAddMaskAnnotation(AllClass.value.indexOf(CurrentClass.value)+1, tempMaskMatrix.value)
-        const maskName = CurrentClass.value+"_"+ mask_id.split('_').pop()
+        const mask_id = await sendAddMaskAnnotation(AllClassList.value.indexOf(CurrentClass.value)+1, tempMaskMatrix.value)
+        const maskName = CurrentClass.value+'_'+ mask_id.split('_').pop()
         const index = CurrentClassItems.value.findIndex(tempClass => tempClass.class_name === CurrentClass.value)
         let colorNum = 0
         if (index === -1) {
@@ -149,7 +138,7 @@
     // 删除Mask
     const RemoveMaskAnnotation = async (index: number, item: string) => {
         sendRemoveMaskAnnotation(myFiles.getMaskIdfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)!)
-        const className = item.substring(0, item.lastIndexOf("_"))
+        const className = item.substring(0, item.lastIndexOf('_'))
         myFiles.removeMaskfromPathList(ImageList.value.indexOf(CurrentImageName.value), index)
         myFiles.removeClassfromPathList(ImageList.value.indexOf(CurrentImageName.value), className)
     }
@@ -227,7 +216,7 @@
                 <span class="ClassColor" :style="{ backgroundColor: classItem.class_color }"></span>&nbsp;&nbsp;
                 <span>{{ classItem.class_name }}</span>
             </div>
-            <div v-else class="data-item" v-for="(item, index1) in AllClass" :key="index1" style="justify-content: center;">{{ item }}</div>
+            <div v-else class="data-item" v-for="(item, index1) in AllClassList" :key="index1" style="justify-content: center;">{{ item }}</div>
         </div>
       </li>
       <li class="Tipli">
