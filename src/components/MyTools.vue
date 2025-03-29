@@ -68,7 +68,17 @@
 			await saveJsonText(cacheJsonText)
 			cacheJsonText = null as unknown as Record<string, any> // 手动清除
 			projectName.value = projectPath.value.split('\\').pop().split('/').pop()
-			projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
+			// projectPath.value = projectPath.value.slice(0, projectPath.value.lastIndexOf('\\'))
+			// projectPath.value = path.dirname(projectPath.value);
+			// 同时处理 Windows 和 Mac/Linux 路径分隔符
+			const lastBackslashIndex = projectPath.value.lastIndexOf('\\');
+			const lastForwardSlashIndex = projectPath.value.lastIndexOf('/');
+			const lastSeparatorIndex = Math.max(lastBackslashIndex, lastForwardSlashIndex);
+
+			// 如果找到了分隔符，则截取到该位置
+			if (lastSeparatorIndex !== -1) {
+				projectPath.value = projectPath.value.slice(0, lastSeparatorIndex);
+			}
 		}
 		else {
 			console.log('用户取消输入')
