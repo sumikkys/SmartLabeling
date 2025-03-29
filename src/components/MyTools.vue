@@ -58,6 +58,8 @@
             projectName.value = result
             await sendCreateNewProject()
             myFiles.removeAll()
+            imgPath.value = ''
+            AllClassList.value = []
         }
         else if (isOpen) {
             projectName.value = projectPath.value.split('\\').pop().split('/').pop()
@@ -91,19 +93,27 @@
         }
     }
 
+    // 读取json文件内容
     const saveJsonText = async(cacheJsonText: any) => {
         isLoading.value = true
         isSwitch.value = false
         await nextTick()        // 等待 DOM 更新
+
+        // 清空之前项目缓存
         myFiles.removeAll()
+        AllClassList.value = []
+
+        // 读取所有图片
         for (const path of Object.keys(cacheJsonText.image_id_cache)) {
             myFiles.addPathtoPathList(path)
         }
+        // 更改当前图片
         imgPath.value = myFiles.getPathfromPathList(cacheJsonText.current_image_id)
-        AllClassList.value = []
+        // 读取数据集Classes
         for (const className of Object.values(cacheJsonText.image_class_cache)) {
             AllClassList.value.push(className as string)
         }
+        // 读取每张图片Mask内容并同时更新当前图片Classes
         let index = 0
         for (const image_masks of Object.values(cacheJsonText.image_data_cache)) {
             if (Object.keys((image_masks as any).masks).length > 0) {

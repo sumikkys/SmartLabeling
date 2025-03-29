@@ -151,8 +151,11 @@
     })
 
     watch(imgPath, async(newVal) => {
-        const imgName = newVal.split('\\').pop().split('/').pop()
-        CurrentImageName.value = imgName
+        if (newVal === '') CurrentImageName.value = ''
+        else {
+            const imgName = newVal.split('\\').pop().split('/').pop()
+            CurrentImageName.value = imgName
+        }
         await nextTick()
     })
 </script>
