@@ -3,20 +3,20 @@ import cv2
 import numpy as np
 from utils import normalize, softmax, top_k
 from initialize_model import clip_text_encoder, clip_vision_encoder
-from cache.image_cache import *
+from cache.image_cache import cache_manager
 
-def clip_class(operation, current_state, image_id: int):
+def clip_class(operation, current_state, image_id: str):
     """使用CLIP识别class"""
     if operation in ['add', 'undo', 'redo']: 
         classes = []
-        for class_id, class_name in image_class_cache.items():
+        for class_id, class_name in cache_manager.image_class_cache.items():
             classes.append(class_name)
         if classes == []:
             return None
         # prefix = "a photo of a "
         # texts = [prefix + class_name for class_name in classes]
-        image_id = get_current_id()
-        image_path = find_key_by_value(image_id_cache, image_id)
+        image_id = cache_manager.get_current_id()
+        image_path = cache_manager.find_key_by_value(cache_manager.image_id_cache, image_id)
         image = cv2.imread(image_path)
         #001 011
         if (not current_state['foreground'] and current_state['boxes']):
@@ -54,7 +54,7 @@ def clip_class(operation, current_state, image_id: int):
             rank_key = f"rank_{i+1}" 
             result[rank_key] = {
                 "class": classes[idx],
-                "class_id": find_key_by_value(image_class_cache, classes[idx]),
+                "class_id": cache_manager.find_key_by_value(cache_manager.image_class_cache, classes[idx]),
                 "probability": float(val)
             }
 

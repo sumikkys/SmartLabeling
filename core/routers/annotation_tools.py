@@ -2,8 +2,6 @@
 from fastapi import APIRouter, HTTPException
 from schemas.annotation_tools_schema import *
 from services.annotation_tools_service import process_prompt
-from cache.image_cache import *
-
 
 router = APIRouter()
 
