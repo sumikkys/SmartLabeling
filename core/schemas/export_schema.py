@@ -13,7 +13,7 @@ class ExportResponse(BaseModel):
     data: ExportResponseData
     
 class ExportRequest(BaseModel):
-    image_id: List[int]
+    image_id: List[str]
     project_name: str
     # project_path: Optional[str] = "F:/SmartLabeling/projects"  # 默认路径
     project_path: Optional[str] = "/Users/alexemarie/Documents/SmartLabeling/projects"  # 默认类型

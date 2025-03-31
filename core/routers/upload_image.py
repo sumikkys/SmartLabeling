@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from services.image_service import save_image_from_path
 from schemas.image_schema import ImageResponse, ImageResponseData, ImageUploadRequest
-from cache.image_cache import *
+from cache.image_cache import cache_manager
 from initialize_model import encoder
 from pathlib import Path
 import os
@@ -32,26 +32,26 @@ async def upload_image(image: ImageUploadRequest):
         # 此处将image_path转换为image_id
         image_name = os.path.basename(saved_image_path_str)
 
-        if saved_image_path_str not in image_id_cache:
-            image_id_cache[saved_image_path_str] = len(image_id_cache)
-        image_id = image_id_cache[saved_image_path_str]
+        if saved_image_path_str not in cache_manager.image_id_cache:
+            cache_manager.image_id_cache[saved_image_path_str] = str(len(cache_manager.image_id_cache))
+        image_id = cache_manager.image_id_cache[saved_image_path_str]
         
-        set_current_id(image_id)
-        current_image_id = get_current_id()
+        cache_manager.set_current_id(image_id)
+        current_image_id = cache_manager.get_current_id()
         
         img_file = cv2.imread(saved_image_path_str)
         height, width, _ = img_file.shape
-        image_data_cache[current_image_id] = {
+        cache_manager.image_data_cache[current_image_id] = {
             "masks": {},
             "width": width,
             "height": height
         }
 
-        if current_image_id in image_embeddings_cache:
-            img_embeddings = image_embeddings_cache[current_image_id]
+        if current_image_id in cache_manager.image_embeddings_cache:
+            img_embeddings = cache_manager.image_embeddings_cache[current_image_id]
         else:
             img_embeddings = encoder(img_file)  # 无记录则调用encoder生成img_embeddings
-            image_embeddings_cache[current_image_id] = img_embeddings
+            cache_manager.image_embeddings_cache[current_image_id] = img_embeddings
         
         response_data = ImageResponse(
             status="success",

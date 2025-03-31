@@ -2,7 +2,8 @@
 import os
 from fastapi import HTTPException
 from PIL import Image
-from cache.image_cache import image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id, set_current_id, find_key_by_value
+# from cache.image_cache import image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id, set_current_id, find_key_by_value
+from cache.image_cache import cache_manager
 import logging
 
 # allowed file extensions
@@ -43,20 +44,24 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 def switch_image(image_id: str) -> tuple[str, dict]:
     """切换图片"""
     try:
-        global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+        # global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
 
         logging.info(f"Attempting to switch image with ID: {image_id}")
-        print(image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id)
+        print(cache_manager.image_id_cache)
+        print(cache_manager.image_data_cache)
+        print(cache_manager.image_class_cache)
+        print([cache_manager.current_image_id])
+        print(cache_manager.image_data_cache.keys())
         # 检查 image_id 是否在缓存中
-        if image_id not in image_data_cache:
+        if image_id not in cache_manager.image_data_cache.keys():
             logging.error(f"Image ID {image_id} not found in image_data_cache.")
             raise ValueError(f"Image ID {image_id} not found in image_data_cache.")
         
         logging.info(f"Setting current image ID to: {image_id}")
-        set_current_id(image_id)
+        cache_manager.set_current_id(image_id)
         
         # 查找 image_id 对应的路径
-        image_path = find_key_by_value(image_id_cache, image_id)
+        image_path = cache_manager.find_key_by_value(cache_manager.image_id_cache, image_id)
         if image_path is None:
             logging.error(f"Image ID {image_id} not found in image_id_cache.")
             raise ValueError(f"Image ID {image_id} not found in cache.")
@@ -66,14 +71,14 @@ def switch_image(image_id: str) -> tuple[str, dict]:
         image_data = {}
         
         # 检查 masks 是否存在
-        if "masks" not in image_data_cache[image_id]:
+        if "masks" not in cache_manager.image_data_cache[image_id]:
             logging.error(f"Image ID {image_id} does not have 'masks' in cache.")
             raise ValueError(f"Image ID {image_id} does not have 'masks' in cache.")
         
         logging.info(f"Processing masks for image ID: {image_id}")
-        for class_id in image_data_cache[image_id]["masks"].keys():
+        for class_id in cache_manager.image_data_cache[image_id]["masks"].keys():
             image_data[class_id] = []
-            for mask_id in image_data_cache[image_id]["masks"][class_id].keys():
+            for mask_id in cache_manager.image_data_cache[image_id]["masks"][class_id].keys():
                 image_data[class_id].append(mask_id)
         
         logging.info(f"Image switched successfully. Image name: {image_name}")

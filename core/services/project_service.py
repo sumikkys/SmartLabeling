@@ -6,7 +6,7 @@ import logging
 from schemas.project_schema import *
 import json
 import numpy as np
-from cache.image_cache import image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+from cache.image_cache import cache_manager
 
 def create_project_dir(request:ProjectRequest) -> Optional[str]:
     """创建项目目录及相关文件"""
@@ -31,12 +31,12 @@ def create_project_dir(request:ProjectRequest) -> Optional[str]:
         create_project_yaml(project_yaml)
         create_project_cacheJson(project_json)
         
-        global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
-        image_id_cache = {}
-        image_data_cache = {}
-        image_class_cache = {0: "_background_"}
-        image_embeddings_cache = {}
-        current_image_id = 0
+        # global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+        cache_manager.image_id_cache = {}
+        cache_manager.image_data_cache = {}
+        cache_manager.image_class_cache = {0: "_background_"}
+        cache_manager.image_embeddings_cache = {}
+        cache_manager.current_image_id = 0
 
         return str(project_path)
 
@@ -97,14 +97,16 @@ def read_project(request: ProjectRequestforRead) -> Tuple[str, str]:
             data = json.load(f)
 
         # 更新全局缓存变量
-        global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
-        image_id_cache = data["image_id_cache"]
-        image_data_cache = data["image_data_cache"]
-        image_class_cache = data["image_class_cache"]
-        image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
-        current_image_id = data["current_image_id"]
-        print(image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id)
-
+        # global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+        cache_manager.image_id_cache = data["image_id_cache"]
+        cache_manager.image_data_cache = data["image_data_cache"]
+        cache_manager.image_class_cache = data["image_class_cache"]
+        cache_manager.image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
+        cache_manager.current_image_id = data["current_image_id"]
+        print(cache_manager.image_id_cache)
+        print(cache_manager.image_data_cache)
+        print(cache_manager.image_class_cache)
+        print([cache_manager.current_image_id])
         logging.info("Global cache variables updated successfully.")
         
         # 返回规范化后的路径

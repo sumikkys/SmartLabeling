@@ -2,7 +2,7 @@
 from schemas.prompt_schema import PromptRequest, PromptResponse
 from services.mask_service import generate_mask
 from services.clip_service import clip_class
-from cache.image_cache import *
+from cache.image_cache import cache_manager
 
 class OperationManager:
     def __init__(self):
@@ -190,7 +190,7 @@ manager = OperationManager()
 def process_prompt(request: PromptRequest, img_embeddings, img_file) -> PromptResponse:
     global manager
     clip_result = None
-    image_id = find_key_by_value(image_id_cache, request.image_name)
+    image_id = cache_manager.find_key_by_value(cache_manager.image_id_cache, request.image_name)
 
     if request.operation == 0:  # add
         result, receive_masks, clip_result = manager.add(request, img_embeddings, img_file, image_id)
