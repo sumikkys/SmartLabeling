@@ -49,6 +49,11 @@ export class Files {
         this.list.value.at(path_id)?.mask.setMaskVisiblefromMaskList(index_id)
     }
 
+    // 获取list长度
+    getListLength() {
+        return this.list.value.length;
+    }
+
     // 根据索引获取图片文件
     getPathfromPathList(id: number) {
         return this.list.value.at(id)?.path;
@@ -103,13 +108,10 @@ export class Files {
         return this.list.value.at(path_id)?.class.getClassList()?.slice() ?? [];
     }
 
-    // removeAll() {
-    //     this.list.value.forEach(file => {
-    //         file.path = ""
-    //         delete file.mask
-    //         delete file.class
-    //     })
-    // }
+    // 清空内存
+    removeAll() {
+        this.list.value = []
+    }
 
     // 根据索引删除某一张图片的某一个mask
     removeMaskfromPathList(path_id: number, index_id: number) {

@@ -26,9 +26,16 @@ def create_project_dir(request:ProjectRequest) -> Optional[str]:
 
         # 创建 YAML 文件
         project_yaml = project_path / f"{project_name}.yaml"
+        project_json = project_path / "cache.json"
         create_project_yaml(project_yaml)
-        global image_class_cache
+        create_project_cacheJson(project_json)
+        
+        global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
+        image_id_cache = {}
+        image_data_cache = {}
         image_class_cache = {0: "_background_"}
+        image_embeddings_cache = {}
+        current_image_id = 0
 
         return str(project_path)
 
@@ -45,6 +52,19 @@ def create_project_yaml(yaml_path: Path):
 
     with open(yaml_path, 'w') as file:
         yaml.dump(data, file, default_flow_style=False)
+        
+def create_project_cacheJson(json_path: Path):
+    """创建 cache.json 文件"""
+    data = {
+        "image_id_cache": {},
+        "image_data_cache": {},
+        "image_class_cache": {0: "_background_"},
+        "image_embeddings_cache": {},
+        "current_image_id": 0
+    }
+
+    with open(json_path, 'w') as file:
+        json.dump(data, file, indent=4)
 
 def read_project(request: ProjectRequestforRead) -> tuple[str, str]:
     """读取已创建项目"""

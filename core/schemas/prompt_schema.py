@@ -18,4 +18,5 @@ class PromptResponse(BaseModel):
     status: str
     message: str
     masks: List[List[int]] 
+    clip_result: Optional[dict]
     data: Optional[dict]
