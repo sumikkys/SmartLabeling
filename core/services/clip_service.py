@@ -35,8 +35,16 @@ def clip_class(operation, current_state, image_id: str):
                 'points': np.array([[box1,box2,point]]).astype(np.float32),
                 'labels': np.array([[2, 3, 1]], dtype=np.int32), 
             }
+        #100 110
+        elif (current_state['foreground']):
+            point = current_state['foreground'][-1]
+            prompt = {
+                'points': np.array([[point]]).astype(np.float32),
+                'labels': np.ones((1,1), dtype=np.int32),  
+            }
+        #010 000
         else:
-            raise ValueError("Boxes is not None")
+            raise ValueError("The available data is not None")
 
         image_features = clip_vision_encoder(np.array(image), prompt)
 
