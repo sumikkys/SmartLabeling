@@ -92,13 +92,20 @@ class CLIPVisionEncoder:
         # BGR -> RGB
         img = img[..., ::-1]
         # Resize image
-        img = cv2.resize(img, (self.input_size, self.input_size), interpolation=cv2.INTER_LINEAR)
+        img = cv2.resize(img, (self.input_size, self.input_size), interpolation=cv2.INTER_NEAREST)
         
         # Permute dimensions from HWC to CHW
         img = np.transpose(img, (2, 0, 1))
         
-        # Convert to float32 and normalize to [0,1]
-        img = img.astype(np.float32) / 255.0
+        
+        pixel_mean = np.array([123.675, 116.28, 103.53], dtype=np.float32)
+        pixel_std = np.array([58.395, 57.12, 57.375], dtype=np.float32)
+        
+        mean = pixel_mean.reshape(3, 1, 1)
+        std = pixel_std.reshape(3, 1, 1)
+        
+        # Convert to float32 and normalize 
+        img = (img.astype(np.float32)-mean) / std
         
         return img
 
@@ -113,6 +120,8 @@ class CLIPVisionEncoder:
         Returns:
             np.ndarray: image`s feature.
         """
+        H, W = image.shape[:2]
+        points = points/np.array([W, H], dtype=np.float32) * self.input_size
         if image.ndim == 3:
             input_image = self.transform(image)
             input_image = np.expand_dims(input_image, axis=0)
