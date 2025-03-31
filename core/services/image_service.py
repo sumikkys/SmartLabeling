@@ -43,7 +43,7 @@ def switch_image(image_id: str) -> str:
             raise ValueError(f"Image ID {image_id} not found in cache.")
         image_name = os.path.basename(image_path)
         image_data = {}
-        if image_id not in image_data_cache:
+        if image_id not in image_data_cache.keys():
             raise ValueError(f"Image ID {image_id} not found in image_data_cache.")
         if "masks" not in image_data_cache[image_id]:
             raise ValueError(f"Image ID {image_id} does not have 'masks' in cache.")

@@ -40,8 +40,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.mjs'),
       allowRunningInsecureContent: true, // 允许不安全的内容加载
       webSecurity: false,                // 禁用web安全策略
-      nodeIntegration: true,
-      contextIsolation: true,
+      nodeIntegration: true,             // 允许Node.js集成
+      contextIsolation: true,            // 启用上下文隔离
     },
   })
 
@@ -140,7 +140,7 @@ app.whenReady().then(() => {
     const result = await dialog.showOpenDialog({
       title: '选择上传的图片',
       properties: ['openFile', 'multiSelections'],  // 选择文件并允许多选
-      filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },]
+      filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },],
     })
 
     if (result.filePaths) {
@@ -155,7 +155,7 @@ app.whenReady().then(() => {
       // 弹出文件夹选择对话框，让用户选择文件夹的保存路径
       const result = await dialog.showOpenDialog({
         title: title || '',
-        properties: ['openDirectory', 'createDirectory'] // 选择文件夹
+        properties: ['openDirectory', 'createDirectory'], // 选择文件夹
       })
 
       if (!result.canceled) {
@@ -173,7 +173,7 @@ app.whenReady().then(() => {
   })
 
   // 监听渲染进程的读取json文件请求
-  ipcMain.handle('read-json-file', (_, filePath: string) => {
+  ipcMain.handle('read-json-file', async(_, filePath: string) => {
     return new Promise((resolve, reject) => {
       fs.readFile(filePath, 'utf-8', (error, data) => {
         if (error) {

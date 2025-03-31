@@ -6,6 +6,7 @@
     import { isSwitch } from '../ts/Telegram'
     import { sendAddMaskAnnotation, sendRemoveMaskAnnotation, 
         sendAddCategoryAnnotation, sendExportCurrentImage, sendExoprtAllImage } from '../ts/Telegram'
+    import MyWarning from './MyWarning.vue'
     import MyLeftImage from './icons/MyLeftImageIcon.vue'
     import MyRightImage from './icons/MyRightImageIcon.vue'
     import MyDownIcon from './icons/MyDownIcon.vue'
@@ -124,6 +125,10 @@
 
     // 添加Mask
     const AddMaskAnnotation = async() => {
+        if (CurrentClass.value === '') {
+            showWarning()
+            return
+        }
         const mask_id = await sendAddMaskAnnotation(AllClassList.value.indexOf(CurrentClass.value)+1, tempMaskMatrix.value)
         const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
         const colorNum = CurrentClassItems.value.find(tempClass => 
@@ -131,6 +136,12 @@
         ) ? CurrentClassItems.value.length : 0
         myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
         myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), mask_id, maskName)
+    }
+
+    // 警告显示
+    const warningDialog = ref()
+    const showWarning = async () => {
+        await warningDialog.value.show()
     }
 
     // 删除Mask
@@ -240,6 +251,7 @@
             </div>
         </div>
         <button class="AddClass" @click="AddMaskAnnotation">+</button>
+        <MyWarning ref="warningDialog" title="Warning" message="请先选择一个Class！"></MyWarning>
       </li>
       <li class="Exportli">
         <button class="Exportlabeldatabutton" @click="sendExportCurrentImage([ImageList.indexOf(CurrentImageName)])">导出当前图片</button>
