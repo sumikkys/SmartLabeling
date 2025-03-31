@@ -19,12 +19,16 @@
   let pos_x = 0
   let pos_y = 0
 
+  const MaskWorker = ref<Worker>()
   const myMaskCanvas = ref()
   const myAnnotationCanvas = ref()
   const myOperationCanvas = ref()
   const AnnotationMask = computed(() => myFiles.getVisibleMaskfromPathList(myFiles.getPathIdfromPathList(imgPath.value)))
 
   onMounted(() => {
+    MaskWorker.value = new Worker(new URL('../ts/MaskWorker.ts', import.meta.url), {
+      type: 'module'
+    })
     draw_Image(imgURL.value) // 初始绘制图片
     checkBackendReady()
   })
@@ -32,15 +36,19 @@
   // 异步初始化临时遮罩矩阵
   function initializeTempMaskAsync(width: number, height: number): Promise<Array<Array<number>>> {
     return new Promise((resolve) => {
-      const matrix: Array<Array<number>> = []
-      let i = 0
-      const chunkSize = 100 // 每次处理100行
+      // 创建一维缓存区（内存优化关键）
+      const buffer = new Uint8Array(width * height)
+      const matrix: number[][] = []
+      let y = 0
+      const chunkSize = 100
       function processChunk() {
-        const end = Math.min(i + chunkSize, height)
-        for (; i < end; i++) {
-          matrix[i] = new Array(width).fill(0)
+        const end = Math.min(y + chunkSize, height)
+        for (; y < end; y++) {
+          // 创建基于buffer的二维视图（零拷贝优化）
+          const row = Array.from(buffer.subarray(y * width, (y + 1) * width))
+          matrix.push(row)
         }
-        if (i < height) {
+        if (y < height) {
           setTimeout(processChunk, 0)
         } else {
           resolve(matrix)
@@ -268,40 +276,53 @@
   async function drawMask() {
     const maskCanvas = myMaskCanvas.value
     const maskCtx = maskCanvas.getContext('2d')!
-    maskCtx.beginPath()
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
-    // drawAnnotationMasks() // 绘制已标注Mask
-    if (tempMaskMatrix.value.length === 0) {
-      return
-    }
-    drawMaskHelp(maskCtx, tempMaskMatrix.value, '#00BFFF')  // 绘制遮罩
+    if (tempMaskMatrix.value.length === 0) return
+    await drawMaskHelp(maskCtx, tempMaskMatrix.value, '#00BFFF')
   }
 
   // 绘制已标注的可见的所有mask
-  function drawAnnotationMasks() {
+  async function drawAnnotationMasks() {
     const annotationCanvas = myAnnotationCanvas.value
     const annotationCtx = annotationCanvas.getContext('2d')!
-    annotationCtx.beginPath()
     annotationCtx.clearRect(0, 0, annotationCanvas.width, annotationCanvas.height)
     for (const tempMask of AnnotationMask.value) {
-      drawMaskHelp(annotationCtx, tempMask.mask_matrix, tempMask.mask_color)
+      await drawMaskHelp(annotationCtx, tempMask.mask_matrix, tempMask.mask_color)
     }
   }
 
   // 绘制遮罩的具体实现函数
   function drawMaskHelp(ctx: CanvasRenderingContext2D, mask: Array<Array<number>>, color: string) {
-    ctx.globalCompositeOperation="source-over"
-    ctx.globalAlpha = 0.1
-    ctx.fillStyle = color
-    for (let j = 0; j < mask.length; j++) {
-      for (let i = 0; i < mask[j].length; i++) {
-        if (mask[j][i] === 1) {
-          ctx.beginPath()
-          ctx.arc(i*zoom_x+pos_x, j*zoom_y+pos_y, 1, 0 ,2 * Math.PI)
-          ctx.fill()
-        }
+    return new Promise<void>((resolve) => {
+      if (!MaskWorker.value) return resolve()
+
+      // 将二维数组转换为TypedArray
+      const rows = mask.length
+      const cols = mask[0]?.length || 0
+      const flatArray = mask.flat()
+      const maskData = new Uint8Array(flatArray)
+
+      const params = {
+        maskData,
+        rows,
+        cols,
+        color,
+        zoomX: zoom_x,
+        zoomY: zoom_y,
+        posX: pos_x,
+        posY: pos_y,
+        canvasWidth: ctx.canvas.width,
+        canvasHeight: ctx.canvas.height
       }
-    }
+
+      MaskWorker.value.onmessage = (e) => {
+        ctx.globalCompositeOperation = "source-over"
+        ctx.drawImage(e.data, 0, 0)
+        resolve()
+      }
+
+      MaskWorker.value.postMessage(params, [maskData.buffer]); // 转移内存所有权
+    })
   }
 
   watch(Dots.operation, async(newVal) => {

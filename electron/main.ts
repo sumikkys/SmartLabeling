@@ -5,6 +5,7 @@ import path from 'node:path'
 // import { exec, ChildProcess} from 'child_process'
 import { spawn, ChildProcess } from 'child_process'
 import fs from 'fs'
+import kill from 'tree-kill'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -105,11 +106,7 @@ function createPythonProcess() {
 app.on('window-all-closed', () => {
   // 在非macOS平台上，关闭所有窗口时退出应用程序
   if (process.platform !== 'darwin') {
-    if (python) {
-      python.kill()  // 关闭 Python 进程
-    }
     app.quit()
-    win = null
   }
 })
 
@@ -121,9 +118,20 @@ app.on('activate', () => {
   }
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
   if (python) {
-    python.kill()  // 关闭 Python 进程
+    event.preventDefault() // 阻止默认退出行为
+    const pid = python.pid
+    if (pid) {
+      kill(pid, 'SIGKILL', (err) => { // 使用 SIGKILL 确保终止
+        if (err) console.error('终止失败:', err)
+        else console.log('Python 进程已终止')
+        python = null
+        app.quit() // 确认终止后退出应用
+      })
+    } else {
+      app.quit()
+    }
   }
 })
 
