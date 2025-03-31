@@ -40,7 +40,6 @@ def update_yaml(yaml_path: str, image_id: int) -> str:
         print(f"Error writing YAML file {yaml_path}: {exc}")
 
     return str(yaml_path)
-
 def export_annotations(request: ExportRequest) -> Dict[str, str]:
     project_name = request.project_name
     save_dir = Path(request.project_path) / project_name
@@ -51,7 +50,18 @@ def export_annotations(request: ExportRequest) -> Dict[str, str]:
     results = []
     yaml_path = Path(save_dir) / f"{project_name}.yaml"
     
+    # 过滤有效的 image_id
+    valid_image_ids = []
     for image_id in request.image_id:
+        if image_id not in image_data_cache:
+            print(f"Skipping invalid Image ID {image_id}: Not found in cache.")
+            continue
+        valid_image_ids.append(image_id)
+    
+    if not valid_image_ids:
+        raise Exception("No valid image IDs found in the request.")
+    
+    for image_id in valid_image_ids:
         try:
             # 为每个image_id创建唯一的文件名
             masks_path = Path(save_dir) / "masks" / f"{project_name}_{image_id}_exported.png"
@@ -86,8 +96,6 @@ def export_annotations(request: ExportRequest) -> Dict[str, str]:
                 "yaml_path": str(yaml_path)
             })
             
-        except KeyError as e:
-            print(f"Image ID {image_id} not found in cache: {e}")
         except (IOError, OSError) as e:
             print(f"Error saving files for image {image_id}: {e}")
         except Exception as e:

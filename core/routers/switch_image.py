@@ -2,7 +2,7 @@
 from fastapi import APIRouter, HTTPException
 from schemas.image_schema import *
 from services.image_service import switch_image
-from cache.image_cache import image_id_cache, image_data_cache
+from cache.image_cache import image_id_cache
 from pathlib import Path
 
 router = APIRouter()
@@ -21,7 +21,6 @@ async def switchImage(image_request: ProjectImageRequest):
         image_id = image_id_cache.get(image_path_str)
         if image_id is None:
             raise ValueError(f"Image path {image_path_str} not found in cache.")
-        
         image_name, image_data = switch_image(image_id)
         response_data = ImageResponse(
             status="success",
