@@ -3,17 +3,6 @@ from initialize_model import encoder, decoder
 from routers import readProject,prompt, upload_image, polling, export, newProject, annotation_tools, switch_image
 import argparse
 
-# 一个点
-# _, logits = decoder.point(img_embeddings, img_file, point_coords=[[324, 282]], point_labels=[1])
-
-# 两个点 同时输入上一次的low-resolution mask
-# decoder.point(img_embeddings, img_file, point_coords=[[324, 282],[314, 177]], point_labels=[1,0], logits=logits)
-
-# 边界框
-#decoder.bBox(img_embeddings, img_file, boxes=[225, 153, 308, 240])
-
-# 边界框与点混合
-# decoder.hybrid(img_embeddings, img_file, point_coords=[[324, 282]], point_labels=[0], boxes=[225, 153, 308, 240])
 app = FastAPI()
 
 print(f"Encoder initialized: {encoder is not None}")

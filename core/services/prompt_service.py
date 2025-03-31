@@ -1,6 +1,8 @@
 # prmpt_service.py
 from schemas.prompt_schema import PromptRequest, PromptResponse
 from services.mask_service import generate_mask
+from services.clip_service import clip_class
+from cache.image_cache import *
 
 class OperationManager:
     def __init__(self):
@@ -22,8 +24,9 @@ class OperationManager:
             "boxes": []
         }
         return "All operations cleared", None
-    def add(self, request, img_embeddings, img_file):
+    def add(self, request, img_embeddings, img_file, image_id):
         """Add operation"""
+        clip_result = None
         if request.type == 0:  # foreground
             self.current_state["foreground"].extend(request.position)
             logits = self.history[-1][2] if self.history else None
@@ -31,9 +34,6 @@ class OperationManager:
             self.current_state["background"].extend(request.position)
             logits = self.history[-1][2] if self.history else None
         elif request.type == 2:  # box
-            # if not self.current_state["boxes"]:
-            #     self.current_state["boxes"].append(request.position)
-            # else:
             self.history.clear()
             self.future.clear()
             self.current_state = {
@@ -43,14 +43,16 @@ class OperationManager:
             }
             self.current_state["boxes"].append(request.position)
             logits = None
-
-        masks, logits= generate_mask('add', request, self.current_state, img_embeddings, img_file, logits)
+        
+        print(self.current_state)
+        masks, logits= generate_mask('add', self.current_state, img_embeddings, img_file, logits)
+        clip_result = clip_class('add', self.current_state, image_id)
         self.history.append(['add', request, logits])
         self.future.clear()
-        #return "Added successfully", None #测试版本保留
-        return "Added successfully", masks
+        #return "Added successfully", None , clip_result #测试版本保留
+        return "Added successfully", masks, clip_result
 
-    def undo(self, img_embeddings, img_file):
+    def undo(self, img_embeddings, img_file, image_id):
         """Undo operation"""
         if not hasattr(self, 'history') or not isinstance(self.history, list):
             raise AttributeError("self.history is not initialized or not a list")
@@ -93,17 +95,18 @@ class OperationManager:
             logits = self.history[-2][2] if len(self.history)>=2 else None
 
             try:
-                masks, logits = generate_mask('undo', request, self.current_state, img_embeddings, img_file, logits)
+                masks, logits = generate_mask('undo',self.current_state, img_embeddings, img_file, logits)
                 self.history[-1][2] = logits
+                clip_result = clip_class('undo', self.current_state, image_id)
             except Exception as e:
                 return f"Error generating mask: {str(e)}", None
 
-            return "Undo operation completed", masks
-            # return "Undo operation completed", None #测试版本保留
+            return "Undo operation completed", masks, clip_result
+            # return "Undo operation completed", None, clip_result #测试版本保留
 
-        return "No operation to undo", None
+        return "No operation to undo", None, None
 
-    def redo(self, img_embeddings, img_file):
+    def redo(self, img_embeddings, img_file, image_id):
         """Redo operation"""
         if self.future:
             operation, request, logits = self.future.pop()
@@ -130,76 +133,79 @@ class OperationManager:
                     if pos in self.current_state["boxes"]:
                         self.current_state["boxes"].remove(pos)
             logits = self.history[-2][2] if len(self.history)>=2 else None
-            masks, logits= generate_mask('redo', request, self.current_state, img_embeddings, img_file, logits)
+            masks, logits= generate_mask('redo', self.current_state, img_embeddings, img_file, logits)
             self.history[-1][2] = logits
+            clip_result = clip_class('undo', self.current_state, image_id)
             if not self.future:
-                # return "come to latest", None
-                return "come to latest", masks
+                # return "come to latest", None, None
+                return "come to latest", masks, clip_result
 
-            return "Redo operation completed", masks
-            # return "Redo operation completed", None #测试版本保留
-        return "No operation to redo", None
-
-    ###当前版本弃用###
-    def remove(self, request, img_embeddings, img_file):
-        """Remove operation"""
-        if request.type == 0:  # foreground
-            for pos in request.position:
-                if pos in self.current_state["foreground"]:
-                    self.current_state["foreground"].remove(pos)
-                    self.history.append(['remove', request, None])
-                    self.future.clear() 
-                else:
-                    return "Foreground point not found", None
-        elif request.type == 1:  # background
-            for pos in request.position:
-                if pos in self.current_state["background"]:
-                    self.current_state["background"].remove(pos)
-                    self.history.append(['remove', request, None])
-                    self.future.clear()
-                else:
-                    return "Background point not found", None
-        elif request.type == 2:  # box
-            pos = request.position
-            if pos in self.current_state["boxes"]:
-                self.current_state["boxes"].remove(pos)
-                self.history.append(['remove', request, None])
-                self.future.clear() 
-            else:
-                return "Box not found", None
-        else:
-            return "Invalid type", None
-        
-        if (not self.current_state["foreground"]) or (not self.current_state["background"]) or (not self.current_state["boxes"]):
-            return "back to original", None
-
-        masks, _ = generate_mask('remove', request, self.current_state, img_embeddings, img_file)
-
-        # return "Operation completed", None #测试版本保留
-        return "Operation completed", masks
-
+            return "Redo operation completed", masks, clip_result
+            # return "Redo operation completed", None, clip_result #测试版本保留
+        return "No operation to redo", None, None
     def get_current_state(self):
         """Get the current state"""
         return self.current_state
+    
+    ###当前版本弃用###
+    # def remove(self, request, img_embeddings, img_file):
+    #     """Remove operation"""
+    #     if request.type == 0:  # foreground
+    #         for pos in request.position:
+        #         if pos in self.current_state["foreground"]:
+        #             self.current_state["foreground"].remove(pos)
+        #             self.history.append(['remove', request, None])
+        #             self.future.clear() 
+        #         else:
+        #             return "Foreground point not found", None
+        # elif request.type == 1:  # background
+        #     for pos in request.position:
+        #         if pos in self.current_state["background"]:
+        #             self.current_state["background"].remove(pos)
+        #             self.history.append(['remove', request, None])
+        #             self.future.clear()
+        #         else:
+        #             return "Background point not found", None
+        # elif request.type == 2:  # box
+        #     pos = request.position
+        #     if pos in self.current_state["boxes"]:
+        #         self.current_state["boxes"].remove(pos)
+        #         self.history.append(['remove', request, None])
+        #         self.future.clear() 
+        #     else:
+        #         return "Box not found", None
+        # else:
+        #     return "Invalid type", None
+        
+        # if (not self.current_state["foreground"]) or (not self.current_state["background"]) or (not self.current_state["boxes"]):
+        #     return "back to original", None
+
+        # masks, _ = generate_mask('remove',self.current_state, img_embeddings, img_file)
+
+        # # return "Operation completed", None #测试版本保留
+        # return "Operation completed", masks
+
 
 manager = OperationManager()
 def process_prompt(request: PromptRequest, img_embeddings, img_file) -> PromptResponse:
     global manager
+    clip_result = None
+    image_id = find_key_by_value(image_id_cache, request.image_name)
 
     if request.operation == 0:  # add
-        result, receive_masks = manager.add(request, img_embeddings, img_file)
+        result, receive_masks, clip_result = manager.add(request, img_embeddings, img_file, image_id)
 
     elif request.operation == 1:  # undo
-        result, receive_masks = manager.undo(img_embeddings, img_file)
+        result, receive_masks, clip_result = manager.undo(img_embeddings, img_file, image_id)
 
     elif request.operation == 2:  # reset
         result, receive_masks = manager.reset()
 
     elif request.operation == 3:  # redo
-        result, receive_masks = manager.redo(img_embeddings, img_file)
+        result, receive_masks, clip_result = manager.redo(img_embeddings, img_file, image_id)
 
-    elif request.operation == 4:  # remove
-        result, receive_masks = manager.remove(request, img_embeddings, img_file)
+    # elif request.operation == 4:  # remove
+    #     result, receive_masks = manager.remove(request, img_embeddings, img_file)
 
     else:
         return PromptResponse(status="error", message="Invalid operation", data=None)
@@ -211,6 +217,7 @@ def process_prompt(request: PromptRequest, img_embeddings, img_file) -> PromptRe
         status="success",
         message=result,
         masks=receive_masks,
+        clip_result = clip_result,
         data={
             "foreground": current_state["foreground"],
             "background": current_state["background"],
