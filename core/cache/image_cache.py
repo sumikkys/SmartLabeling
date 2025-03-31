@@ -16,8 +16,8 @@ class ImageCache:
         if not self._initialized:
             self.image_id_cache: Dict[str, str] = {}
             self.image_data_cache: Dict[str, Dict] = {}
-            self.image_class_cache: Dict[int, str] = {0: "_background_"}
-            self.image_embeddings_cache: Dict[int, np.ndarray] = {}
+            self.image_class_cache: Dict[str, str] = {"0": "_background_"}
+            self.image_embeddings_cache: Dict[str, np.ndarray] = {}
             self.current_image_id: str = "0"
             self._initialized = True
 

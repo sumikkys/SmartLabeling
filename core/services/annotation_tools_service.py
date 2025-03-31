@@ -45,7 +45,7 @@ class AnnotationService:
         if image_id not in cache_manager.image_data_cache:
             return MaskResponse(mask_id=mask_id, class_id=None, message="Image ID not found.")
         
-        class_id = int(mask_id.split("_")[0])
+        class_id = mask_id.split("_")[0] 
         
         if class_id not in cache_manager.image_data_cache[image_id]["masks"]:
             return MaskResponse(mask_id=mask_id, class_id=class_id, message="Class ID not found in image.")
@@ -58,7 +58,7 @@ class AnnotationService:
 
     def update_class_name(self, class_id: str, class_name: str) -> Optional[ClassResponse]:
         """更新类别"""
-        if class_id in cache_manager.image_class_cache:
+        if class_id in cache_manager.image_class_cache.keys():
             cache_manager.image_class_cache[class_id] = class_name
             return ClassResponse(class_id=class_id, class_name=class_name)
         return None
