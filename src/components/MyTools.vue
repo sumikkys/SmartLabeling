@@ -5,7 +5,7 @@
 	import { Boxes } from '../ts/Boxes'
 	import { imgPath, isLoading, myFiles, ClassColor } from '../ts/Files'
 	import { tempMaskMatrix } from '../ts/Masks'
-	import { AllClassList } from '../ts/Classes'
+	import { myAllClassList } from '../ts/Classes'
 	import { projectPath, projectName } from '../ts/Projects'
 	import { isSwitch, sendCreateNewProject, sendOpenProject, 
 		sendImageData, sendSwitchImage, sendExoprtAllImage } from '../ts/Telegram'
@@ -119,7 +119,7 @@
 			// 更改当前图片
 			imgPath.value = myFiles.getPathfromPathList(cacheJsonText.current_image_id)
 			// 读取数据集Classes
-			AllClassList.value = [...new Set(Object.values(cacheJsonText.image_class_cache))] as string[]
+			myAllClassList.addClasses(Object.keys(cacheJsonText.image_class_cache), Object.values(cacheJsonText.image_class_cache))
 			// 读取每张图片Mask内容并同时更新当前图片Classes
 			let index = 0
 			for (const image_masks of Object.values(cacheJsonText.image_data_cache)) {
@@ -128,7 +128,7 @@
 						if (Object.keys(mask as any).length === 0) break
 						const CurrentClassNameList = myFiles.getClassItemsFromPath(index)
 						const maskId = Object.keys(mask as any)[0]
-						const currentClassName = AllClassList.value.at(parseInt(maskId.substring(0, maskId.lastIndexOf('_')))-1)??''
+						const currentClassName = myAllClassList.findClassProperty(maskId.substring(0, maskId.lastIndexOf('_')))??''
 						const maskName = `${currentClassName}_${maskId.split('_').pop()}`
 						const maskMatrix = Object.values(mask as any)[0] as Array<Array<number>>
 						const colorNum = CurrentClassNameList.find(tempClass => 
@@ -152,7 +152,7 @@
 		if (myFiles.getListLength() !== 0) myFiles.removeAll()
 		isSwitch.value = false
 		imgPath.value = ''
-		AllClassList.value = []
+		myAllClassList.removeAll()
 		await nextTick()
 	}
 

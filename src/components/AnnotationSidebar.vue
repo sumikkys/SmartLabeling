@@ -1,8 +1,9 @@
 <script setup lang="ts">
     import { ref, computed, watch, nextTick }  from 'vue'
+    import { AllClassItem } from '../ts/Types'
     import { imgPath, myFiles, ClassColor } from '../ts/Files'
     import { tempMaskMatrix } from '../ts/Masks'
-    import { AllClassList } from '../ts/Classes'
+    import { myAllClassList } from '../ts/Classes'
     import { isSwitch } from '../ts/Telegram'
     import { sendAddMaskAnnotation, sendRemoveMaskAnnotation, 
         sendAddCategoryAnnotation, sendExportCurrentImage, sendExoprtAllImage } from '../ts/Telegram'
@@ -30,6 +31,8 @@
     const ImageList = computed(() => myFiles.getAllPathNamefromPathList())
     const MaskItems = computed(() => myFiles.getMaskItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
     const CurrentClassItems = computed(() => myFiles.getClassItemsFromPath(ImageList.value.indexOf(CurrentImageName.value)))
+    const AllClassList = computed(() => myAllClassList.getAllClassListBySortId())
+    const AllClassListByOrder = computed(() => myAllClassList.getAllClassListBySortProbability())
 
     // 切换图片
     const SwitchImage = (id : number) => {
@@ -95,19 +98,19 @@
     }
 
     // 确认并添加Class
-    const handleConfirm = () => {
+    const handleConfirm = async() => {
         showAddOneClass.value = !showAddOneClass.value
-        if(!AllClassList.value.includes(AddOneClassName.value)){
-            sendAddCategoryAnnotation(AddOneClassName.value)
-            AllClassList.value.push(AddOneClassName.value)
-            AddOneClassName.value = ''      // 清除输入框内的文字残留
+        if(!myAllClassList.isExistedClassByClassProperty(AddOneClassName.value)){
+            const classId  = await sendAddCategoryAnnotation(AddOneClassName.value)
+            myAllClassList.addOneClass(AddOneClassName.value, classId)
         }
+        AddOneClassName.value = ''      // 清除输入框内的文字残留
     }
 
     // Class搜索栏功能实现
     const AllClassFilter = computed(() => {
-        return AllClassList.value.filter((item) => {
-            return item.toLowerCase().includes(searchQuery.value.toLowerCase())
+        return AllClassListByOrder.value.filter((item: AllClassItem) => {
+            return item.class_name.toLowerCase().includes(searchQuery.value.toLowerCase())
         })
     })
 
@@ -129,7 +132,7 @@
             showWarning()
             return
         }
-        const mask_id = await sendAddMaskAnnotation(AllClassList.value.indexOf(CurrentClass.value)+1, tempMaskMatrix.value)
+        const mask_id = await sendAddMaskAnnotation(myAllClassList.findClassProperty(CurrentClass.value), tempMaskMatrix.value)
         const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
         const colorNum = CurrentClassItems.value.find(tempClass => 
 			tempClass.class_name === CurrentClass.value
@@ -228,7 +231,7 @@
                 <span class="ClassColor" :style="{ backgroundColor: classItem.class_color }"></span>&nbsp;&nbsp;
                 <span>{{ classItem.class_name }}</span>
             </div>
-            <div v-else class="data-item" v-for="(item, index1) in AllClassList" :key="index1" style="justify-content: center;">{{ item }}</div>
+            <div v-else class="data-item" v-for="(item, index1) in AllClassList" :key="index1" style="justify-content: center;">{{ item.class_name }}</div>
         </div>
       </li>
       <li class="Tipli">
@@ -244,8 +247,9 @@
                         <input v-model="searchQuery" class="select-Bar" type="text" placeholder="搜索Class" />
                         <hr style="FILTER: progid:DXImageTransform.Microsoft.Glow(color=lightgray,strength=10); margin: 0" width="100%" color=lightgray SIZE=1 />
                     </div>
-                    <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionClass(item)">
-                        <span class="ClassElement">{{ item }}</span>
+                    <button class ="select-element" v-for="(item, index1) in AllClassFilter" :key="index1" @click="selectionClass(item.class_name)">
+                        <span class="ClassElement">{{ item.class_name }}</span>
+                        <span class="ClassProbability">{{ item.probability.toFixed(3) }}</span>
                     </button>
                 </div>
             </div>
@@ -517,6 +521,9 @@
         box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
         transition: all 0.1s ease;
         cursor: pointer;
+        display: flex;
+        justify-content: start;
+        align-items: center;
     }
 
     .select-menu .select-element:active {
@@ -529,6 +536,15 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
+        width: 3rem;
+        margin-left: 1rem;
+    }
+    .ClassProbability {
+        background-color: #FFFFFF;
+        color: #B0B0B0;
+        font: normal 1.2rem Arial, sans-serif;
+        width: fit-content;
+        margin-left: 1rem;
     }
     .AddClass {
         cursor: pointer;
