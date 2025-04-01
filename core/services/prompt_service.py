@@ -3,6 +3,7 @@ from schemas.prompt_schema import PromptRequest, PromptResponse
 from services.mask_service import generate_mask
 from services.clip_service import clip_class
 from cache.image_cache import cache_manager
+import asyncio
 
 class OperationManager:
     def __init__(self):
@@ -24,7 +25,7 @@ class OperationManager:
             "boxes": []
         }
         return "All operations cleared", None
-    def add(self, request, img_embeddings, img_file, image_id):
+    async def add(self, request, img_embeddings, img_file, image_id, classes_features):
         """Add operation"""
         clip_result = None
         if request.type == 0:  # foreground
@@ -44,15 +45,29 @@ class OperationManager:
             self.current_state["boxes"].append(request.position)
             logits = None
         
-        print(self.current_state)
-        masks, logits= generate_mask('add', self.current_state, img_embeddings, img_file, logits)
-        clip_result = clip_class('add', self.current_state, image_id)
+        # #print(self.current_state)
+        # masks, logits= generate_mask('add', self.current_state, img_embeddings, img_file, logits)
+        # clip_result = clip_class('add', self.current_state, image_id)
+
+        # masks_task = asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits)
+        # clip_task = asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+
+        # masks, logits = await masks_task
+        # clip_result = await clip_task
+
+        results = await asyncio.gather(
+            asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
+            asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+        )
+        masks, logits = results[0]  
+        clip_result = results[1]   
+
         self.history.append(['add', request, logits])
         self.future.clear()
         #return "Added successfully", None , clip_result #测试版本保留
         return "Added successfully", masks, clip_result
 
-    def undo(self, img_embeddings, img_file, image_id):
+    async def undo(self, img_embeddings, img_file, image_id, classes_features):
         """Undo operation"""
         if not hasattr(self, 'history') or not isinstance(self.history, list):
             raise AttributeError("self.history is not initialized or not a list")
@@ -95,9 +110,14 @@ class OperationManager:
             logits = self.history[-2][2] if len(self.history)>=2 else None
 
             try:
-                masks, logits = generate_mask('undo',self.current_state, img_embeddings, img_file, logits)
+                results = await asyncio.gather(
+                    asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
+                    asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+                )
+                masks, logits = results[0]  
+                clip_result = results[1]  
+
                 self.history[-1][2] = logits
-                clip_result = clip_class('undo', self.current_state, image_id)
             except Exception as e:
                 return f"Error generating mask: {str(e)}", None
 
@@ -106,7 +126,7 @@ class OperationManager:
 
         return "No operation to undo", None, None
 
-    def redo(self, img_embeddings, img_file, image_id):
+    async def redo(self, img_embeddings, img_file, image_id, classes_features):
         """Redo operation"""
         if self.future:
             operation, request, logits = self.future.pop()
@@ -133,9 +153,15 @@ class OperationManager:
                     if pos in self.current_state["boxes"]:
                         self.current_state["boxes"].remove(pos)
             logits = self.history[-2][2] if len(self.history)>=2 else None
-            masks, logits= generate_mask('redo', self.current_state, img_embeddings, img_file, logits)
+            results = await asyncio.gather(
+                asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
+                asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+            )
+            masks, logits = results[0]  
+            clip_result = results[1]  
+            
             self.history[-1][2] = logits
-            clip_result = clip_class('undo', self.current_state, image_id)
+            
             if not self.future:
                 # return "come to latest", None, None
                 return "come to latest", masks, clip_result
@@ -187,22 +213,22 @@ class OperationManager:
 
 
 manager = OperationManager()
-def process_prompt(request: PromptRequest, img_embeddings, img_file) -> PromptResponse:
+async def process_prompt(request: PromptRequest, img_embeddings, img_file, classes_features) -> PromptResponse:
     global manager
     clip_result = None
     image_id = cache_manager.find_key_by_value(cache_manager.image_id_cache, request.image_name)
 
     if request.operation == 0:  # add
-        result, receive_masks, clip_result = manager.add(request, img_embeddings, img_file, image_id)
+        result, receive_masks, clip_result = await manager.add(request, img_embeddings, img_file, image_id,classes_features)
 
     elif request.operation == 1:  # undo
-        result, receive_masks, clip_result = manager.undo(img_embeddings, img_file, image_id)
+        result, receive_masks, clip_result = await manager.undo(img_embeddings, img_file, image_id,classes_features)
 
     elif request.operation == 2:  # reset
         result, receive_masks = manager.reset()
 
     elif request.operation == 3:  # redo
-        result, receive_masks, clip_result = manager.redo(img_embeddings, img_file, image_id)
+        result, receive_masks, clip_result = await manager.redo(img_embeddings, img_file, image_id,classes_features)
 
     # elif request.operation == 4:  # remove
     #     result, receive_masks = manager.remove(request, img_embeddings, img_file)
