@@ -2,17 +2,21 @@
 import cv2
 import numpy as np
 from utils import normalize, softmax, top_k
-from initialize_model import clip_text_encoder, clip_vision_encoder
+from initialize_model import clip_vision_encoder
 from cache.image_cache import cache_manager
 
-def clip_class(operation, current_state, image_id: str):
+def clip_class(operation, current_state, image_id: str, classes_features: np.ndarray):
     """使用CLIP识别class"""
     if operation in ['add', 'undo', 'redo']: 
+
         classes = []
         for class_id, class_name in cache_manager.image_class_cache.items():
             classes.append(class_name)
         if classes == []:
             return None
+        if classes_features.any() == False:
+            return None
+
         # prefix = "a photo of a "
         # texts = [prefix + class_name for class_name in classes]
         image_id = cache_manager.get_current_id()
@@ -48,7 +52,8 @@ def clip_class(operation, current_state, image_id: str):
 
         image_features = clip_vision_encoder(np.array(image), prompt)
 
-        classes_features = clip_text_encoder.zeroshot_classifier(classes)
+        # classes_features = clip_text_encoder.zeroshot_classifier(classes)
+        classes_features = classes_features
 
         # 对图像和文本特征进行归一化
         image_features_normalized = normalize(image_features)
@@ -58,12 +63,13 @@ def clip_class(operation, current_state, image_id: str):
         values, indices = top_k(similarity_softmax, 3)
         result = {}
         for i, (val, idx) in enumerate(zip(values[0], indices[0])):
-            print(f"排名 {i+1}: {classes[idx]} (相似度: {val:.4f})")
-            rank_key = f"rank_{i+1}" 
-            result[rank_key] = {
-                "class": classes[idx],
-                "class_id": cache_manager.find_key_by_value(cache_manager.image_class_cache, classes[idx]),
-                "probability": float(val)
-            }
+            if idx < len(classes):
+                print(f"排名 {i+1}: {classes[idx]} (相似度: {val:.4f})")
+                rank_key = f"rank_{i+1}" 
+                result[rank_key] = {
+                    "class": classes[idx],
+                    "class_id": cache_manager.find_key_by_value(cache_manager.image_class_cache, classes[idx]),
+                    "probability": float(val)
+                }
 
     return result
