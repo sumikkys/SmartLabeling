@@ -40,12 +40,19 @@ async def prompt(request: PromptRequest):
             logger.info("Using cached image embeddings for path: %s", image_path)
             img_embeddings = cache_manager.image_embeddings_cache[image_id]
         else:
-            logger.info("Image read successfully, processing with encoder")
+            logger.info("Image read successfully, processing with sam_encoder")
             img_embeddings = encoder(img_file)  #无记录则调用encoder生成img_embeddings
             cache_manager.image_embeddings_cache[image_id] = img_embeddings
 
-        logger.info("Image embeddings generated, processing prompt")
-        response_data = process_prompt(request, img_embeddings, img_file)
+        if cache_manager.classes_features_cache.any():
+            logger.info("Using cached classes features")
+            classes_features = cache_manager.classes_features_cache
+        else:
+            logger.info("cached classes features not found")
+            classes_features = None
+
+        logger.info("Classses features generated, processing prompt")
+        response_data = await process_prompt(request, img_embeddings, img_file, classes_features)
         
         logger.info("Prompt processed successfully, returning response")
         return response_data

@@ -116,6 +116,7 @@ def export_cache(request: ExportRequest) -> str:
         "image_data_cache": cache_manager.image_data_cache,
         "image_class_cache": cache_manager.image_class_cache,
         "image_embeddings_cache": {k: v.tolist() for k, v in cache_manager.image_embeddings_cache.items()},
+        "classes_features_cache": cache_manager.classes_features_cache.tolist(),
         "current_image_id": cache_manager.current_image_id
     }
     with open(cache_path, 'w') as f:

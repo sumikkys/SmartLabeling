@@ -36,6 +36,7 @@ def create_project_dir(request:ProjectRequest) -> Optional[str]:
         cache_manager.image_data_cache = {}
         cache_manager.image_class_cache = {0: "_background_"}
         cache_manager.image_embeddings_cache = {}
+        cache_manager.classes_features_cache = np.empty((512, 0))
         cache_manager.current_image_id = 0
 
         return str(project_path)
@@ -61,6 +62,7 @@ def create_project_cacheJson(json_path: Path):
         "image_data_cache": {},
         "image_class_cache": {0: "_background_"},
         "image_embeddings_cache": {},
+        "classes_features_cache": [],
         "current_image_id": 0
     }
 
@@ -102,6 +104,7 @@ def read_project(request: ProjectRequestforRead) -> Tuple[str, str]:
         cache_manager.image_data_cache = data["image_data_cache"]
         cache_manager.image_class_cache = data["image_class_cache"]
         cache_manager.image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
+        cache_manager.classes_features_cache = np.array(data["classes_features_cache"])
         cache_manager.current_image_id = data["current_image_id"]
         print(cache_manager.image_id_cache)
         print(cache_manager.image_data_cache)
