@@ -2,6 +2,8 @@
 from cache.image_cache import cache_manager
 from schemas.annotation_tools_schema import *
 from utils import normalize, softmax, top_k
+from initialize_model import clip_text_encoder
+import numpy as np
 
 # 在文件开头添加全局计数器
 class GlobalCounter:
@@ -60,6 +62,8 @@ class AnnotationService:
         """更新类别"""
         if class_id in cache_manager.image_class_cache.keys():
             cache_manager.image_class_cache[class_id] = class_name
+            new_classes_features_cache = clip_text_encoder.zeroshot_classifier([class_name])
+            cache_manager.classes_features_cache = np.hstack((cache_manager.classes_features_cache, new_classes_features_cache))
             return ClassResponse(class_id=class_id, class_name=class_name)
         return None
 
@@ -67,7 +71,7 @@ class AnnotationService:
         """获取当前图片所有类别"""
         classes = []
         for class_id, class_name in cache_manager.image_class_cache.items():
-            classes.append(ClassResponse(class_id=class_id, class_name=class_name))
+            classes.append(ClassResponse(class_id=str(class_id), class_name=class_name))
         return classes
 
     def add_class(self, class_name: str) -> Optional[ClassResponse]:
@@ -75,9 +79,18 @@ class AnnotationService:
         if class_name in cache_manager.image_class_cache.values():
             class_id = cache_manager.find_key_by_value(cache_manager.image_class_cache, class_name)
             return ClassResponse(class_id=class_id, class_name=class_name, message="Class already exists.")
-        
         class_id = global_counter.get_next_class_id()
         cache_manager.image_class_cache[class_id] = class_name
+        # classes = []
+        # for class_id, class_name in cache_manager.image_class_cache.items():
+        #     classes.append(class_name)
+        new_classes_features_cache = clip_text_encoder.zeroshot_classifier([class_name])
+        # cache_manager.classes_features_cache = clip_text_encoder.zeroshot_classifier(classes)
+        # if cache_manager.classes_features_cache.any():
+        #     print(cache_manager.classes_features_cache.shape)
+        # print("******************************")
+        # print(new_classes_features_cache.shape)
+        cache_manager.classes_features_cache = np.hstack((cache_manager.classes_features_cache, new_classes_features_cache))
         return ClassResponse(class_id=class_id, class_name=class_name, message="Class added successfully.")
 
     def delete_class(self, class_id:str) -> Optional[ClassResponse]:
@@ -85,6 +98,7 @@ class AnnotationService:
         if class_id in cache_manager.image_class_cache.keys():
             class_name = cache_manager.image_class_cache[class_id]
             del cache_manager.image_class_cache[class_id]
+            
             return ClassResponse(class_id=class_id, class_name=class_name, message="Class deleted successfully.")
         else:
             return ClassResponse(class_id=class_id, class_name="None", message="Class not found.")
