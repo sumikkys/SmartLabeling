@@ -70,10 +70,10 @@ export class Files {
     }
 
     // 获取所有文件id
-    getAllPathIdfromPathList() {
+    getAllPathIdfromPathList(): Array<string> {
         const filename_list = new Array();
         for (let i = 0; i < this.list.value.length; i++) {
-            filename_list.push(i);
+            filename_list.push(i.toString());
         }
         return filename_list;
     }

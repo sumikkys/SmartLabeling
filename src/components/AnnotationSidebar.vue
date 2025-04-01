@@ -258,7 +258,7 @@
         <MyWarning ref="warningDialog" title="Warning" message="请先选择一个Class！"></MyWarning>
       </li>
       <li class="Exportli">
-        <button class="Exportlabeldatabutton" @click="sendExportCurrentImage([ImageList.indexOf(CurrentImageName)])">导出当前图片</button>
+        <button class="Exportlabeldatabutton" @click="sendExportCurrentImage([ImageList.indexOf(CurrentImageName).toString()])">导出当前图片</button>
         <button class="Exportlabeldatabutton" @click="sendExoprtAllImage(myFiles.getAllPathIdfromPathList())">导出所有图片</button>
       </li>
     </ul>
