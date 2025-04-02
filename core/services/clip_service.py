@@ -12,13 +12,12 @@ def clip_class(operation, current_state, image_id: str, classes_features: np.nda
         classes = []
         for class_id, class_name in cache_manager.image_class_cache.items():
             classes.append(class_name)
+        if classes[0]=="_background_":
+            classes = classes[1:]
         if classes == []:
             return None
         if classes_features.any() == False:
             return None
-
-        # prefix = "a photo of a "
-        # texts = [prefix + class_name for class_name in classes]
         image_id = cache_manager.get_current_id()
         image_path = cache_manager.find_key_by_value(cache_manager.image_id_cache, image_id)
         image = cv2.imread(image_path)
@@ -51,8 +50,6 @@ def clip_class(operation, current_state, image_id: str, classes_features: np.nda
             raise ValueError("The available data is not None")
 
         image_features = clip_vision_encoder(np.array(image), prompt)
-
-        # classes_features = clip_text_encoder.zeroshot_classifier(classes)
         classes_features = classes_features
 
         # 对图像和文本特征进行归一化

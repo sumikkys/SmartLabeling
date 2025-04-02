@@ -47,11 +47,11 @@ def switch_image(image_id: str) -> tuple[str, dict]:
         # global image_id_cache, image_data_cache, image_class_cache, image_embeddings_cache, current_image_id
 
         logging.info(f"Attempting to switch image with ID: {image_id}")
-        print(cache_manager.image_id_cache)
-        print(cache_manager.image_data_cache)
-        print(cache_manager.image_class_cache)
-        print([cache_manager.current_image_id])
-        print(cache_manager.image_data_cache.keys())
+        # print(cache_manager.image_id_cache)
+        # print(cache_manager.image_data_cache)
+        # print(cache_manager.image_class_cache)
+        # print([cache_manager.current_image_id])
+        # print(cache_manager.image_data_cache.keys())
         # 检查 image_id 是否在缓存中
         if image_id not in cache_manager.image_data_cache.keys():
             logging.error(f"Image ID {image_id} not found in image_data_cache.")
