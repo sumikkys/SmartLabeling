@@ -106,10 +106,10 @@ def read_project(request: ProjectRequestforRead) -> Tuple[str, str]:
         cache_manager.image_embeddings_cache = {k: np.array(v) for k, v in data["image_embeddings_cache"].items()}
         cache_manager.classes_features_cache = np.array(data["classes_features_cache"])
         cache_manager.current_image_id = data["current_image_id"]
-        print(cache_manager.image_id_cache)
-        print(cache_manager.image_data_cache)
-        print(cache_manager.image_class_cache)
-        print([cache_manager.current_image_id])
+        # print(cache_manager.image_id_cache)
+        # print(cache_manager.image_data_cache)
+        # print(cache_manager.image_class_cache)
+        # print([cache_manager.current_image_id])
         logging.info("Global cache variables updated successfully.")
         
         # 返回规范化后的路径
