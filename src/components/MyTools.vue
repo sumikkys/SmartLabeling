@@ -128,7 +128,7 @@
 						if (Object.keys(mask as any).length === 0) break
 						const CurrentClassNameList = myFiles.getClassItemsFromPath(index)
 						const maskId = Object.keys(mask as any)[0]
-						const currentClassName = myAllClassList.findClassProperty(maskId.substring(0, maskId.lastIndexOf('_')))??''
+						const currentClassName = myAllClassList.findClassProperty(maskId.substring(0, maskId.lastIndexOf('_')), 'Id')??''
 						const maskName = `${currentClassName}_${maskId.split('_').pop()}`
 						const maskMatrix = Object.values(mask as any)[0] as Array<Array<number>>
 						const colorNum = CurrentClassNameList.find(tempClass => 

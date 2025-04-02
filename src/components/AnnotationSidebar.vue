@@ -100,7 +100,7 @@
     // 确认并添加Class
     const handleConfirm = async() => {
         showAddOneClass.value = !showAddOneClass.value
-        if(!myAllClassList.isExistedClassByClassProperty(AddOneClassName.value)){
+        if(!myAllClassList.isExistedClassByClassProperty(AddOneClassName.value, 'Name')){
             const classId  = await sendAddCategoryAnnotation(AddOneClassName.value)
             myAllClassList.addOneClass(AddOneClassName.value, classId)
         }
@@ -132,7 +132,7 @@
             showWarning()
             return
         }
-        const mask_id = await sendAddMaskAnnotation(myAllClassList.findClassProperty(CurrentClass.value), tempMaskMatrix.value)
+        const mask_id = await sendAddMaskAnnotation(myAllClassList.findClassProperty(CurrentClass.value, 'Name'), tempMaskMatrix.value)
         const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
         const colorNum = CurrentClassItems.value.find(tempClass => 
 			tempClass.class_name === CurrentClass.value
@@ -165,7 +165,7 @@
     watch(imgPath, async(newVal) => {
         if (newVal === '') CurrentImageName.value = ''
         else {
-            const imgName = newVal.split('\\').pop().split('/').pop()
+            const imgName = newVal?.split('\\').pop().split('/').pop()
             CurrentImageName.value = imgName
         }
         await nextTick()
