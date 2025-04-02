@@ -136,7 +136,7 @@
         const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
         const colorNum = CurrentClassItems.value.find(tempClass => 
 			tempClass.class_name === CurrentClass.value
-        ) ? CurrentClassItems.value.length : 0
+        ) ? 0 : CurrentClassItems.value.length
         myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
         myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), mask_id, maskName)
     }
@@ -522,7 +522,7 @@
         transition: all 0.1s ease;
         cursor: pointer;
         display: flex;
-        justify-content: start;
+        justify-content: space-between;
         align-items: center;
     }
 
@@ -536,7 +536,7 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
-        width: 3rem;
+        width: 4rem;
         margin-left: 1rem;
     }
     .ClassProbability {
@@ -544,7 +544,7 @@
         color: #B0B0B0;
         font: normal 1.2rem Arial, sans-serif;
         width: fit-content;
-        margin-left: 1rem;
+        margin-right: 1rem;
     }
     .AddClass {
         cursor: pointer;

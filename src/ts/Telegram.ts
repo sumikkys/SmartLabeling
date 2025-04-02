@@ -189,8 +189,8 @@ export const sendPointData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -214,8 +214,8 @@ export const sendUndoPointData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -239,8 +239,8 @@ export const sendRedoPointData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -264,8 +264,8 @@ export const sendBoxData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -289,8 +289,8 @@ export const sendUndoBoxData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -314,8 +314,8 @@ export const sendRedoBoxData = async() => {
     }) 
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -339,8 +339,8 @@ export const sendResetData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) return
-    myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -412,12 +412,12 @@ export const sendGetCategoryAnnotation = async () => {
 // 增加类别
 export const sendAddCategoryAnnotation = async (className: string): Promise<string> => {
   try {
-    const response = await api.post<{ mask_data: { class_id: string, masks: Array<Array<number>>} }>('/annotation-tools/prompt', {
+    const response = await api.post<{ class_id: string }>('/annotation-tools/prompt', {
       "operation": 4,
       "class_name": className
     })
     console.log('annotation-tools/prompt 操作结果:', response.data)
-    return response.data.mask_data.class_id
+    return response.data.class_id
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {

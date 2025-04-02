@@ -64,7 +64,7 @@ export class AllClasses {
     addClasses(classIds: Array<string>, classNames: Array<string>): void {
         const currentList = this.all_class_list.value ?? [];
         const newList = [...currentList];
-        for (let i = 0; i < Math.min(classIds.length, classNames.length); i++) {
+        for (let i = 1; i < Math.min(classIds.length, classNames.length); i++) {
             newList.push({ class_name: classNames[i], class_id: classIds[i], probability: 0 });
         }
         this.all_class_list.value = newList;
@@ -79,6 +79,13 @@ export class AllClasses {
             if (targetIndex === -1) return;
             newList[targetIndex].probability = classItem.probability;
         });
+        this.all_class_list.value = newList;
+    }
+
+    // 清空Class的概率
+    clearClassesProbability(): void {
+        const currentList = this.all_class_list.value ?? [];
+        const newList = currentList.map(tempClass => ({...tempClass, probability: 0 }));
         this.all_class_list.value = newList;
     }
 

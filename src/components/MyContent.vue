@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { ref, watch, onMounted, computed, nextTick } from 'vue'
+  import { ref, watch, onMounted, computed } from 'vue'
   import { selection } from '../ts/Selection'
   import { Dots, send_dot, isDotMasked } from '../ts/Dots'
   import { Boxes, send_box } from '../ts/Boxes'
@@ -91,12 +91,14 @@
       img_size_y = img.naturalHeight
 
       requestIdleCallback(async () => {
-        if (!isWindowChange || tempMaskMatrix.value.length === 0) {
+        if (tempMaskMatrix.value.length === 0) {
           tempMaskMatrix.value = await initializeTempMaskAsync(img_size_x, img_size_y)
-        } else if (isWindowChange) {
+        }
+        if (isWindowChange.value) {
           drawPointAndBox()
           drawAnnotationMasks()
           drawMask()
+          isWindowChange.value = false
         }
       })
     }
@@ -315,13 +317,13 @@
         canvasHeight: ctx.canvas.height
       }
 
+      MaskWorker.value.postMessage(params, [maskData.buffer]) // 转移内存所有权
+
       MaskWorker.value.onmessage = (e) => {
         ctx.globalCompositeOperation = "source-over"
         ctx.drawImage(e.data, 0, 0)
         resolve()
       }
-
-      MaskWorker.value.postMessage(params, [maskData.buffer]); // 转移内存所有权
     })
   }
 
@@ -352,7 +354,6 @@
   watch(isWindowChange, async(newVal) => {
     if (newVal) {
       draw_Image(imgURL.value)  // 重新加载并绘制图片
-      isWindowChange.value = false
     }
   })
 
@@ -366,7 +367,6 @@
         drawAnnotationMasks()
         sendSwitchImage()
         isSwitch.value = false
-        await nextTick()
       }
     }
   })
