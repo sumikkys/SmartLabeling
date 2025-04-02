@@ -136,7 +136,7 @@
         const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
         const colorNum = CurrentClassItems.value.find(tempClass => 
 			tempClass.class_name === CurrentClass.value
-        ) ? CurrentClassItems.value.length : 0
+        ) ? 0 : CurrentClassItems.value.length
         myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
         myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), mask_id, maskName)
     }

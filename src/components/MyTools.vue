@@ -117,6 +117,8 @@
 				myFiles.addPathtoPathList(path)
 			}
 			// 更改当前图片
+			isSwitch.value = false
+			await nextTick()
 			imgPath.value = myFiles.getPathfromPathList(cacheJsonText.current_image_id)
 			// 读取数据集Classes
 			myAllClassList.addClasses(Object.keys(cacheJsonText.image_class_cache), Object.values(cacheJsonText.image_class_cache))
@@ -131,9 +133,10 @@
 						const currentClassName = myAllClassList.findClassProperty(maskId.substring(0, maskId.lastIndexOf('_')), 'Id')??''
 						const maskName = `${currentClassName}_${maskId.split('_').pop()}`
 						const maskMatrix = Object.values(mask as any)[0] as Array<Array<number>>
+						console.log(currentClassName)
 						const colorNum = CurrentClassNameList.find(tempClass => 
 							tempClass.class_name === currentClassName
-						) ? CurrentClassNameList.length : 0
+						) ? 0 : CurrentClassNameList.length
 						myFiles.addClasstoPathList(index, currentClassName, ClassColor[colorNum])
 						myFiles.addMasktoPathList(index, maskId, maskName, maskMatrix)
 					}
@@ -151,6 +154,7 @@
 		tempMaskMatrix.value = []
 		if (myFiles.getListLength() !== 0) myFiles.removeAll()
 		isSwitch.value = false
+		await nextTick()
 		imgPath.value = ''
 		myAllClassList.removeAll()
 		await nextTick()
