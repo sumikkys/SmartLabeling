@@ -7,13 +7,13 @@ import asyncio
 
 class OperationManager:
     def __init__(self):
-        self.history = []  # record history operations
-        self.future = []  # record future operations
+        self.history = [] 
+        self.future = [] 
         self.current_state = {
             "foreground": [],
             "background": [],
             "boxes": []
-        }  # record current state
+        } 
 
     def reset(self):
         """Reset operation"""
@@ -44,16 +44,6 @@ class OperationManager:
             }
             self.current_state["boxes"].append(request.position)
             logits = None
-        
-        # #print(self.current_state)
-        # masks, logits= generate_mask('add', self.current_state, img_embeddings, img_file, logits)
-        # clip_result = clip_class('add', self.current_state, image_id)
-
-        # masks_task = asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits)
-        # clip_task = asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
-
-        # masks, logits = await masks_task
-        # clip_result = await clip_task
 
         results = await asyncio.gather(
             asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
