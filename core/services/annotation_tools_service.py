@@ -97,11 +97,12 @@ class AnnotationService:
         """删除类别"""
         if class_id in cache_manager.image_class_cache.keys():
             class_name = cache_manager.image_class_cache[class_id]
+            index = list(cache_manager.image_class_cache.keys()).index(class_id)
+            cache_manager.classes_features_cache = np.delete(cache_manager.classes_features_cache, index, axis=1)
             del cache_manager.image_class_cache[class_id]
-            
             return ClassResponse(class_id=class_id, class_name=class_name, message="Class deleted successfully.")
         else:
-            return ClassResponse(class_id=class_id, class_name="None", message="Class not found.")
+            return False
 
 annotation_service = AnnotationService()
 
