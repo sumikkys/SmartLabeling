@@ -39,8 +39,6 @@ class CLIPVisionEncoder:
 
         self.input_name = [input.name for input in self.session.get_inputs()]
         self.image_shape = self.session.get_inputs()[0].shape
-        self.points_shape = self.session.get_inputs()[1].shape
-        self.labels_shape = self.session.get_inputs()[2].shape
         self.output_shape = self.session.get_outputs()[0].shape
         
         self.input_size = self.image_shape[-1]
@@ -61,13 +59,9 @@ class CLIPVisionEncoder:
         # y = np.random.randint(0,224,(1,1,2)).astype(np.float32)
         # z = np.random.randint(0,4,(1,1)).astype(np.int32)
         x = np.zeros((1,3,224,224)).astype(np.float32)
-        y = np.zeros((1,5,2)).astype(np.float32)
-        z = np.ones((1,5)).astype(np.int32)
         print("start warmup!")
         for i in tqdm(range(epoch)):
-            self.session.run(None, {self.input_name[0]: x,
-                                    self.input_name[1]: y,
-                                    self.input_name[2]: z})
+            self.session.run(None, {self.input_name[0]: x})
         print("warmup finish!")
         polling.initialized = True
 
@@ -109,7 +103,7 @@ class CLIPVisionEncoder:
         
         return img
 
-    def _extract_feature(self, image: np.ndarray, points: np.ndarray, labels: np.ndarray) -> np.ndarray:
+    def _extract_feature(self, image: np.ndarray) -> np.ndarray:
         """extract image feature
 
         this function can use vit to extract feature from transformed image.
@@ -120,8 +114,8 @@ class CLIPVisionEncoder:
         Returns:
             np.ndarray: image`s feature.
         """
+        print(image.shape)
         H, W = image.shape[:2]
-        points = points/np.array([W, H], dtype=np.float32) * self.input_size
         if image.ndim == 3:
             input_image = self.transform(image)
             input_image = np.expand_dims(input_image, axis=0)
@@ -129,16 +123,65 @@ class CLIPVisionEncoder:
             input_image = image
             for i in range(input_image.shape[0]):
                 input_image[i] = self.transform(input_image[i])
-        feature = self.session.run(None, {self.input_name[0]: input_image,
+        feature = self.session.run(None, {self.input_name[0]: input_image})[0]
+        shape_dict = {
+            'ori': (H, W),
+            'post': self.input_size
+        }
+        return feature, shape_dict
+
+    def __call__(self, img: np.array, *args: Any, **kwds: Any) -> Any:
+        return self._extract_feature(img)
+
+    def printsize(self):
+        print(self.input_size)
+
+class CLIPRegionEncoder:
+
+    def __init__(self,
+                 model_path: str,
+                 device: str = "cuda",
+                 warmup_epoch: int = 3,
+                 **kwargs):
+        opt = ort.SessionOptions()
+
+        if device == "cuda":
+            provider = ['CUDAExecutionProvider']
+        elif device == "cpu":
+            provider = ['CPUExecutionProvider']
+        else:
+            raise ValueError("Invalid device, please use 'cuda' or 'cpu' device.")
+
+        print("loading CLIP Region Encoder model...")
+        self.session = ort.InferenceSession(model_path,
+                                            opt,
+                                            providers=provider,
+                                            **kwargs)
+
+
+        self.input_name = [input.name for input in self.session.get_inputs()]
+        
+
+    def _extract_feature(self, image: np.ndarray, points: np.ndarray, labels: np.ndarray, shape_dict: dict) -> np.ndarray:
+        """extract image feature
+
+        Args:
+            tensor (np.ndarray): input image with BGR format.
+
+        Returns:
+            np.ndarray: image`s feature.
+        """
+        H, W = shape_dict['ori']
+        input_size = shape_dict['post']
+        points = points/np.array([W, H], dtype=np.float32) * input_size
+        feature = self.session.run(None, {self.input_name[0]: image,
                                           self.input_name[1]: points,
                                           self.input_name[2]: labels})[0]
         return feature
 
-    def __call__(self, img: np.array, prompts: dict, *args: Any, **kwds: Any) -> Any:
-        return self._extract_feature(img,prompts['points'],prompts['labels'])
+    def __call__(self, img: np.array, shape_dict: dict, prompts: dict, *args: Any, **kwds: Any) -> Any:
+        return self._extract_feature(img, prompts['points'], prompts['labels'], shape_dict)
 
-    def printsize(self):
-        print(self.input_size)
 
 
 
