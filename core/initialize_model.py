@@ -36,14 +36,16 @@ def initialize_models():
         device="cpu"
     )
     
+    clip_region_encoder = CLIPRegionEncoder(
+        model_path=region_encoder_path,
+        device="cpu"
+    )
+    
     clip_vision_encoder = CLIPVisionEncoder(
         model_path=vision_encoder_path,
         device="cpu"
     )
     
-    clip_region_encoder = CLIPRegionEncoder(
-        model_path=region_encoder_path,
-        device="cpu"
-    )
+
 
 initialize_models()
