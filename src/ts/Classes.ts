@@ -64,7 +64,7 @@ export class AllClasses {
     addClasses(classIds: Array<string>, classNames: Array<string>): void {
         const currentList = this.all_class_list.value ?? [];
         const newList = [...currentList];
-        for (let i = 0; i < Math.min(classIds.length, classNames.length); i++) {
+        for (let i = 1; i < Math.min(classIds.length, classNames.length); i++) {
             newList.push({ class_name: classNames[i], class_id: classIds[i], probability: 0 });
         }
         this.all_class_list.value = newList;
@@ -79,6 +79,13 @@ export class AllClasses {
             if (targetIndex === -1) return;
             newList[targetIndex].probability = classItem.probability;
         });
+        this.all_class_list.value = newList;
+    }
+
+    // 清空Class的概率
+    clearClassesProbability(): void {
+        const currentList = this.all_class_list.value ?? [];
+        const newList = currentList.map(tempClass => ({...tempClass, probability: 0 }));
         this.all_class_list.value = newList;
     }
 
@@ -97,11 +104,11 @@ export class AllClasses {
     }
 
     // 寻找该Class是否存在
-    isExistedClassByClassProperty(className?: string, classId?: string): boolean {
+    isExistedClassByClassProperty(classProperty: string, type: string): boolean {
         const currentList = this.all_class_list.value ?? [];
         let targetIndex : number;
-        if (className) targetIndex = currentList.findIndex(tempClass => tempClass.class_name === className);
-        else if (classId) targetIndex = currentList.findIndex(tempClass => tempClass.class_id === classId);
+        if (type === "Name") targetIndex = currentList.findIndex(tempClass => tempClass.class_name === classProperty);
+        else if (type === "Id") targetIndex = currentList.findIndex(tempClass => tempClass.class_id === classProperty);
         else targetIndex = -1;
 
         if (targetIndex === -1) return false;
@@ -109,15 +116,15 @@ export class AllClasses {
     }
 
     // 寻找该Class的属性
-    findClassProperty(className?: string, classId?: string): string {
+    findClassProperty(classProperty: string, type: string): string {
         const currentList = this.all_class_list.value ?? [];
         let targetIndex : number;
-        if (className) {
-            targetIndex = currentList.findIndex(tempClass => tempClass.class_name === className);
+        if (type === "Name") {
+            targetIndex = currentList.findIndex(tempClass => tempClass.class_name === classProperty);
             return currentList.at(targetIndex)?.class_id ?? "";
         }
-        else if (classId) {
-            targetIndex = currentList.findIndex(tempClass => tempClass.class_id === classId);
+        else if (type === "Id") {
+            targetIndex = currentList.findIndex(tempClass => tempClass.class_id === classProperty);
             return currentList.at(targetIndex)?.class_name ?? "";
         }
         else return "";

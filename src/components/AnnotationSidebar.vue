@@ -100,7 +100,7 @@
     // 确认并添加Class
     const handleConfirm = async() => {
         showAddOneClass.value = !showAddOneClass.value
-        if(!myAllClassList.isExistedClassByClassProperty(AddOneClassName.value)){
+        if(!myAllClassList.isExistedClassByClassProperty(AddOneClassName.value, 'Name')){
             const classId  = await sendAddCategoryAnnotation(AddOneClassName.value)
             myAllClassList.addOneClass(AddOneClassName.value, classId)
         }
@@ -132,11 +132,11 @@
             showWarning()
             return
         }
-        const mask_id = await sendAddMaskAnnotation(myAllClassList.findClassProperty(CurrentClass.value), tempMaskMatrix.value)
+        const mask_id = await sendAddMaskAnnotation(myAllClassList.findClassProperty(CurrentClass.value, 'Name'), tempMaskMatrix.value)
         const maskName = `${CurrentClass.value}_${mask_id.split('_').pop()}`
         const colorNum = CurrentClassItems.value.find(tempClass => 
 			tempClass.class_name === CurrentClass.value
-        ) ? CurrentClassItems.value.length : 0
+        ) ? 0 : CurrentClassItems.value.length
         myFiles.addClasstoPathList(ImageList.value.indexOf(CurrentImageName.value), CurrentClass.value, ClassColor[colorNum])
         myFiles.addMasktoPathList(ImageList.value.indexOf(CurrentImageName.value), mask_id, maskName)
     }
@@ -165,7 +165,7 @@
     watch(imgPath, async(newVal) => {
         if (newVal === '') CurrentImageName.value = ''
         else {
-            const imgName = newVal.split('\\').pop().split('/').pop()
+            const imgName = newVal?.split('\\').pop().split('/').pop()
             CurrentImageName.value = imgName
         }
         await nextTick()
@@ -522,7 +522,7 @@
         transition: all 0.1s ease;
         cursor: pointer;
         display: flex;
-        justify-content: start;
+        justify-content: space-between;
         align-items: center;
     }
 
@@ -536,7 +536,7 @@
         background-color: #FFFFFF;
         color: #000000;
         font: bold 1.4rem Arial, sans-serif;
-        width: 3rem;
+        width: 4rem;
         margin-left: 1rem;
     }
     .ClassProbability {
@@ -544,7 +544,7 @@
         color: #B0B0B0;
         font: normal 1.2rem Arial, sans-serif;
         width: fit-content;
-        margin-left: 1rem;
+        margin-right: 1rem;
     }
     .AddClass {
         cursor: pointer;

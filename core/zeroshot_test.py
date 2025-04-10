@@ -1,17 +1,23 @@
-from initialize_model import clip_text_encoder, clip_vision_encoder
+from initialize_model import clip_text_encoder, clip_vision_encoder, clip_region_encoder
 import cv2
 import numpy as np
 from utils import normalize, softmax, top_k
 
 classes = ["kidney", "liver", "lung"]
+# image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/amos_0507_31.png")
 image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/amos_0507_31.png")
 
 prompt = {
-    'points': np.array([[[200,300]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
+    'points': np.array([[[110,110]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
     'labels': np.ones((1,1),dtype=np.int32), # (1,1) 即 (batch_size, num_points) 现在只有标签为1的点
 }
+image_pre_features, shape_dict = clip_vision_encoder(np.array(image))
+# 计算图像特征
+print("image_pre_features:", image_pre_features)
+print("image_pre_features.shape:", image_pre_features.shape)
+print("shape_dict:", shape_dict)
+image_features = clip_region_encoder(image_pre_features, shape_dict, prompt)
 
-image_features = clip_vision_encoder(np.array(image), prompt)
 
 # 计算文本特征
 classes_features = clip_text_encoder.zeroshot_classifier(classes)

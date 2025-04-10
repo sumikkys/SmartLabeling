@@ -16,9 +16,11 @@ class ImageCache:
         if not self._initialized:
             self.image_id_cache: Dict[str, str] = {}
             self.image_data_cache: Dict[str, Dict] = {}
-            self.   image_class_cache: Dict[str, str] = {"0": "_background_"}
+            self.image_class_cache: Dict[str, str] = {"0": "_background_"}
             self.image_embeddings_cache: Dict[str, np.ndarray] = {}
             self.classes_features_cache: np.ndarray = np.empty((512, 0))
+            self.image_pre_features_cache: Dict[str, np.ndarray] = {}
+            self.shape_dict_cache: Dict[str, dict] = {}
             self.current_image_id: str = "0"
             self._initialized = True
 
@@ -76,17 +78,3 @@ cache_manager = ImageCache()
 # #     2: "class2"
 # # }
 # image_embeddings_cache = {} # image_id -> img_embeddings
-# current_image_id = 0
-# def get_current_id():
-#     global current_id
-#     return current_id
-
-# def set_current_id(new_id):
-#     global current_id
-#     current_id = new_id
-# # 用于字典的反向查找
-# def find_key_by_value(dictionary, value):
-#     for key, val in dictionary.items():
-#         if val == value:
-#             return key
-#     return None

@@ -1,17 +1,20 @@
-from initialize_model import clip_text_encoder, clip_vision_encoder
+from initialize_model import clip_text_encoder, clip_vision_encoder, clip_region_encoder
 import cv2
 import numpy as np
 from utils import normalize, softmax, top_k
 
 texts = ["a photo of a landscape","a photo of a medical CT scan", "a photo of a anime girl"]
-image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/test_image_jpg.jpg")
+# image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/test_image_jpg.jpg")
+image = cv2.imread("/Users/sumipeng/Programming/AI/SmartLabeling/core/images/test_image.png")
 
 prompt = {
     'points': np.array([[[200,300]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
     'labels': np.ones((1,1),dtype=np.int32), # (1,1) 即 (batch_size, num_points) 现在只有标签为1的点
 }
 
-image_features = clip_vision_encoder(np.array(image), prompt)
+image_pre_features, shape_dict = clip_vision_encoder(np.array(image))
+
+image_features = clip_region_encoder(image_pre_features, shape_dict, prompt)
 
 texts_features = clip_text_encoder(texts)
 
