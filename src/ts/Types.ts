@@ -31,3 +31,9 @@ export interface ClassItem {
     class_color: string,
     count : number
 }
+
+export interface AllClassItem {
+    class_name : string,
+    class_id: string,
+    probability: number
+}

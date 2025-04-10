@@ -5,6 +5,7 @@ import path from 'node:path'
 // import { exec, ChildProcess} from 'child_process'
 import { spawn, ChildProcess } from 'child_process'
 import fs from 'fs'
+import kill from 'tree-kill'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -40,8 +41,8 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.mjs'),
       allowRunningInsecureContent: true, // 允许不安全的内容加载
       webSecurity: false,                // 禁用web安全策略
-      nodeIntegration: true,
-      contextIsolation: true,
+      nodeIntegration: true,             // 允许Node.js集成
+      contextIsolation: true,            // 启用上下文隔离
     },
   })
 
@@ -105,11 +106,7 @@ function createPythonProcess() {
 app.on('window-all-closed', () => {
   // 在非macOS平台上，关闭所有窗口时退出应用程序
   if (process.platform !== 'darwin') {
-    if (python) {
-      python.kill()  // 关闭 Python 进程
-    }
     app.quit()
-    win = null
   }
 })
 
@@ -121,9 +118,20 @@ app.on('activate', () => {
   }
 })
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
   if (python) {
-    python.kill()  // 关闭 Python 进程
+    event.preventDefault() // 阻止默认退出行为
+    const pid = python.pid
+    if (pid) {
+      kill(pid, 'SIGKILL', (err) => { // 使用 SIGKILL 确保终止
+        if (err) console.error('终止失败:', err)
+        else console.log('Python 进程已终止')
+        python = null
+        app.quit() // 确认终止后退出应用
+      })
+    } else {
+      app.quit()
+    }
   }
 })
 
@@ -140,7 +148,7 @@ app.whenReady().then(() => {
     const result = await dialog.showOpenDialog({
       title: '选择上传的图片',
       properties: ['openFile', 'multiSelections'],  // 选择文件并允许多选
-      filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },]
+      filters: [{ name: '图片', extensions: ['jpg', 'jepg', 'png', 'bmp'] },],
     })
 
     if (result.filePaths) {
@@ -155,7 +163,7 @@ app.whenReady().then(() => {
       // 弹出文件夹选择对话框，让用户选择文件夹的保存路径
       const result = await dialog.showOpenDialog({
         title: title || '',
-        properties: ['openDirectory', 'createDirectory'] // 选择文件夹
+        properties: ['openDirectory', 'createDirectory'], // 选择文件夹
       })
 
       if (!result.canceled) {
@@ -173,7 +181,7 @@ app.whenReady().then(() => {
   })
 
   // 监听渲染进程的读取json文件请求
-  ipcMain.handle('read-json-file', (_, filePath: string) => {
+  ipcMain.handle('read-json-file', async(_, filePath: string) => {
     return new Promise((resolve, reject) => {
       fs.readFile(filePath, 'utf-8', (error, data) => {
         if (error) {

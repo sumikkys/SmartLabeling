@@ -3,8 +3,10 @@ import { ref } from 'vue'
 import axios, { AxiosError } from 'axios'
 import { send_dot, isDotMasked } from './Dots'
 import { send_box } from './Boxes'
+import { AllClassItem } from './Types'
 import { imgPath } from './Files'
 import { tempMaskMatrix } from './Masks'
+import { myAllClassList } from './Classes'
 import { projectPath, projectName } from './Projects'
 
 // 判断是否是选择图片或上传图片
@@ -187,6 +189,8 @@ export const sendPointData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -210,6 +214,8 @@ export const sendUndoPointData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -233,6 +239,8 @@ export const sendRedoPointData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -256,6 +264,8 @@ export const sendBoxData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -279,6 +289,8 @@ export const sendUndoBoxData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -302,6 +314,8 @@ export const sendRedoBoxData = async() => {
     }) 
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -325,6 +339,8 @@ export const sendResetData = async() => {
     })
     console.log('Prompt 操作结果:', response.data)
     tempMaskMatrix.value = response.data.masks
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -336,7 +352,7 @@ export const sendResetData = async() => {
 }
 
 // 增加mask
-export const sendAddMaskAnnotation = async (classId: number, masks: Array<Array<number>>) : Promise<string> => {
+export const sendAddMaskAnnotation = async (classId: string, masks: Array<Array<number>>) : Promise<string> => {
   try {
     const response = await api.post<{ mask_id: string }>('/annotation-tools/prompt', {
       "operation": 0,
@@ -394,13 +410,14 @@ export const sendGetCategoryAnnotation = async () => {
 }
 
 // 增加类别
-export const sendAddCategoryAnnotation = async (className: string) => {
+export const sendAddCategoryAnnotation = async (className: string): Promise<string> => {
   try {
-    const response = await api.post('/annotation-tools/prompt', {
+    const response = await api.post<{ class_id: string }>('/annotation-tools/prompt', {
       "operation": 4,
       "class_name": className
     })
     console.log('annotation-tools/prompt 操作结果:', response.data)
+    return response.data.class_id
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
@@ -408,11 +425,12 @@ export const sendAddCategoryAnnotation = async (className: string) => {
     } else {
       handleError(String(err))
     }
+    throw err
   }
 }
 
 // 导出当前图片Mask
-export const sendExportCurrentImage = async (imageId: Array<number>) => {
+export const sendExportCurrentImage = async (imageId: Array<string>) => {
   try {
     const response = await api.post('/export', {
       "image_id": imageId,
@@ -431,7 +449,7 @@ export const sendExportCurrentImage = async (imageId: Array<number>) => {
 }
 
 // 导出所有图片Mask
-export const sendExoprtAllImage = async (imageIdList: Array<number>) => {
+export const sendExoprtAllImage = async (imageIdList: Array<string>) => {
   try {
     const response = await api.post('/export', {
       "image_id": imageIdList,

@@ -2,10 +2,10 @@
 import cv2
 import numpy as np
 from utils import normalize, softmax, top_k
-from initialize_model import clip_vision_encoder
+from initialize_model import clip_region_encoder
 from cache.image_cache import cache_manager
 
-def clip_class(operation, current_state, image_id: str, classes_features: np.ndarray):
+def clip_class(operation, current_state, image_id: str, classes_features: np.ndarray, image_pre_features, shape_dict):
     """使用CLIP识别class"""
     if operation in ['add', 'undo', 'redo']: 
 
@@ -49,7 +49,7 @@ def clip_class(operation, current_state, image_id: str, classes_features: np.nda
         else:
             raise ValueError("The available data is not None")
 
-        image_features = clip_vision_encoder(np.array(image), prompt)
+        image_features = clip_region_encoder(image_pre_features, shape_dict, prompt)
         classes_features = classes_features
 
         # 对图像和文本特征进行归一化

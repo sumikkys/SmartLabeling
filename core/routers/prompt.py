@@ -3,10 +3,11 @@ from fastapi import APIRouter, HTTPException
 from schemas.prompt_schema import PromptRequest, PromptResponse
 from services.prompt_service import process_prompt
 from cache.image_cache import cache_manager
-from initialize_model import encoder
+from initialize_model import encoder,clip_vision_encoder
 import cv2
 import logging
 from pathlib import Path
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -44,6 +45,15 @@ async def prompt(request: PromptRequest):
             img_embeddings = encoder(img_file)  #无记录则调用encoder生成img_embeddings
             cache_manager.image_embeddings_cache[image_id] = img_embeddings
 
+        if image_id in cache_manager.image_pre_features_cache and image_id in cache_manager.shape_dict_cache:
+            logger.info("Using cached image pre-feature for path: %s", image_path)
+            image_pre_features, shape_dict = cache_manager.image_pre_features_cache[image_id], cache_manager.shape_dict_cache[image_id]
+        else:
+            logger.info("Image read successfully, processing with clip_vision_encoder")
+            image_pre_features, shape_dict = clip_vision_encoder(np.array(img_file))
+            cache_manager.image_pre_features_cache[image_id] = image_pre_features
+            cache_manager.shape_dict_cache[image_id] = shape_dict
+
         if cache_manager.classes_features_cache.any():
             logger.info("Using cached classes features")
             classes_features = cache_manager.classes_features_cache
@@ -52,7 +62,7 @@ async def prompt(request: PromptRequest):
             classes_features = None
 
         logger.info("Classses features generated, processing prompt")
-        response_data = await process_prompt(request, img_embeddings, img_file, classes_features)
+        response_data = await process_prompt(request, img_embeddings, img_file, classes_features,image_pre_features, shape_dict)
         
         logger.info("Prompt processed successfully, returning response")
         return response_data
