@@ -49,8 +49,9 @@ def clip_class(operation, current_state, image_id: str, classes_features: np.nda
         else:
             raise ValueError("The available data is not None")
 
+
         image_features = clip_region_encoder(image_pre_features, shape_dict, prompt)
-        classes_features = classes_features
+        image_features = clip_vision_encoder(np.array(image), prompt)
 
         # 对图像和文本特征进行归一化
         image_features_normalized = normalize(image_features)
