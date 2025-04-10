@@ -21,6 +21,16 @@ def initialize_models():
     region_encoder_path = os.path.join(base_path,"models/clip_region_encoder.onnx")
 
     # Initialize the SAM-Med2D ONNX model
+    clip_text_encoder = CLIPTextEncoder(
+        model_path=text_encoder_path,
+        device="cpu"
+    )
+
+    clip_region_encoder = CLIPRegionEncoder(
+    model_path=region_encoder_path,
+    device="cpu"
+    )
+
     encoder = SamEncoder(
         model_path=encoder_path,
         warmup_epoch=3,
@@ -31,21 +41,9 @@ def initialize_models():
         device="cpu",
     )
     
-    clip_text_encoder = CLIPTextEncoder(
-        model_path=text_encoder_path,
-        device="cpu"
-    )
-    
-    clip_region_encoder = CLIPRegionEncoder(
-        model_path=region_encoder_path,
-        device="cpu"
-    )
-    
     clip_vision_encoder = CLIPVisionEncoder(
         model_path=vision_encoder_path,
         device="cpu"
     )
-    
-
 
 initialize_models()

@@ -5,7 +5,7 @@ from utils import normalize, softmax, top_k
 
 classes = ["kidney", "liver", "lung"]
 # image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/amos_0507_31.png")
-image = cv2.imread("/Users/sumipeng/Programming/AI/SmartLabeling/core/images/amos_0507_31.png")
+image = cv2.imread("/Users/alexemarie/Documents/GitHub/SmartLabeling/core/images/amos_0507_31.png")
 
 prompt = {
     'points': np.array([[[110,110]]]).astype(np.float32),# (1,1,2) 即 (batch_size, num_points, 2)
@@ -13,7 +13,9 @@ prompt = {
 }
 image_pre_features, shape_dict = clip_vision_encoder(np.array(image))
 # 计算图像特征
-
+print("image_pre_features:", image_pre_features)
+print("image_pre_features.shape:", image_pre_features.shape)
+print("shape_dict:", shape_dict)
 image_features = clip_region_encoder(image_pre_features, shape_dict, prompt)
 
 

@@ -185,9 +185,6 @@ class CLIPRegionEncoder:
 
 
 
-
-
-
 class CLIPTextEncoder:
 
     def __init__(self,

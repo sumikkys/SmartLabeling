@@ -81,15 +81,7 @@ class AnnotationService:
             return ClassResponse(class_id=class_id, class_name=class_name, message="Class already exists.")
         class_id = global_counter.get_next_class_id()
         cache_manager.image_class_cache[class_id] = class_name
-        # classes = []
-        # for class_id, class_name in cache_manager.image_class_cache.items():
-        #     classes.append(class_name)
         new_classes_features_cache = clip_text_encoder.zeroshot_classifier([class_name])
-        # cache_manager.classes_features_cache = clip_text_encoder.zeroshot_classifier(classes)
-        # if cache_manager.classes_features_cache.any():
-        #     print(cache_manager.classes_features_cache.shape)
-        # print("******************************")
-        # print(new_classes_features_cache.shape)
         cache_manager.classes_features_cache = np.hstack((cache_manager.classes_features_cache, new_classes_features_cache))
         return ClassResponse(class_id=class_id, class_name=class_name, message="Class added successfully.")
 
