@@ -152,6 +152,8 @@
       if (selection.value === 2 && box_flag) {
         if (e.offsetX < pos_x || e.offsetY < pos_y || e.offsetX > pos_x+img.width || e.offsetY > pos_y+img.height) {
           box_flag = false
+          maskCtx.beginPath()
+          maskCtx.clearRect(0,0,maskCanvas.width,maskCanvas.height)
           return
         }
         drawBox(e)
