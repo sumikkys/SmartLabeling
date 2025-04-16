@@ -133,7 +133,6 @@
 						const currentClassName = myAllClassList.findClassProperty(maskId.substring(0, maskId.lastIndexOf('_')), 'Id')??''
 						const maskName = `${currentClassName}_${maskId.split('_').pop()}`
 						const maskMatrix = Object.values(mask as any)[0] as Array<Array<number>>
-						console.log(currentClassName)
 						const colorNum = CurrentClassNameList.find(tempClass => 
 							tempClass.class_name === currentClassName
 						) ? 0 : CurrentClassNameList.length

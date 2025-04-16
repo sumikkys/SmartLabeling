@@ -1,19 +1,102 @@
 // Telegram.ts
-import { ref } from 'vue'
-import axios, { AxiosError } from 'axios'
-import { send_dot, isDotMasked } from './Dots'
-import { send_box } from './Boxes'
-import { AllClassItem } from './Types'
-import { imgPath } from './Files'
-import { tempMaskMatrix } from './Masks'
-import { myAllClassList } from './Classes'
-import { projectPath, projectName } from './Projects'
+import { ref } from 'vue';
+import axios, { AxiosError } from 'axios';
+import { send_dot, isDotMasked } from './Dots';
+import { send_box } from './Boxes';
+import { AllClassItem } from './Types';
+import { imgPath } from './Files';
+import { tempMaskMatrix } from './Masks';
+import { myAllClassList } from './Classes';
+import { projectPath, projectName } from './Projects';
 
 // 判断是否是选择图片或上传图片
-export const isSwitch = ref(false)
+export const isSwitch = ref(false);
 
 // 是否初始化加载
-export const initialized = ref(false)
+export const initialized = ref(false);
+
+class AppWebSocket {
+  private socket: WebSocket | null = null;
+  private url: string;
+  private reconnectInterval: number;
+  private maxReconnectAttempts: number;
+  private reconnectAttempts = 0;
+  public isConnected = ref(false);
+  private messageCallbacks: Array<(data: any) => void> = [];
+
+  constructor(
+    url: string,
+    reconnectInterval: number = 5000,
+    maxReconnectAttempts: number = 5
+  ) {
+    this.url = url;
+    this.reconnectInterval = reconnectInterval;
+    this.maxReconnectAttempts = maxReconnectAttempts;
+    this.connect();
+  }
+
+  private connect() {
+    this.socket = new WebSocket(this.url);
+
+    this.socket.onopen = () => {
+      console.log('WebSocket connected');
+      this.isConnected.value = true;
+      this.reconnectAttempts = 0; // 重置重连次数
+    };
+
+    this.socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        this.messageCallbacks.forEach(cb => cb(data));
+      } catch (err) {
+        handleError(`WebSocket Message parsing failed: ${err}`);
+      }
+    };
+
+    this.socket.onerror = (event) => {
+      handleError(new Error(`WebSocket error: ${event.type}`));
+      this.socket?.close();
+    };
+
+    this.socket.onclose = (event) => {
+      this.isConnected.value = false;
+      if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
+        setTimeout(() => {
+          console.log(`Try to reconnect (${this.reconnectAttempts + 1}/${this.maxReconnectAttempts})`);
+          this.reconnectAttempts++;
+          this.connect();
+        }, this.reconnectInterval);
+      }
+    };
+  }
+
+  send(data: object) {
+    if (this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify(data));
+    } else {
+      console.warn('WebSocket Connection not ready, message not sent:', data);
+    }
+  }
+
+  close() {
+    this.socket?.close();
+  }
+
+  onMessage(callback: (data: any) => void) {
+    this.messageCallbacks.push(callback);
+  }
+
+  offMessage(callback: (data: any) => void) {
+    this.messageCallbacks = this.messageCallbacks.filter(cb => cb !== callback);
+  }
+}
+
+// 根据环境配置 WebSocket 端点
+const wsBaseUrl = import.meta.env.PROD
+  ? 'ws://127.0.0.1:8000/ws/status'
+  : '/ws';
+
+export const socket = new AppWebSocket(`${wsBaseUrl}/ws`);
 
 // Axios 实例配置
 export const api = axios.create({
@@ -21,84 +104,84 @@ export const api = axios.create({
     ? 'http://localhost:8232' // 生产环境直接访问
     : '/api', // 开发环境由Vite代理
   headers: { 'Content-Type': 'application/json' }
-})
+});
 
 // 定义 error 变量
-const error = ref<string | null>(null)
+const error = ref<string | null>(null);
 
 // 定义增强型错误类型
 type EnhancedError = 
   | AxiosError<{ message?: string }>  // 包含响应数据的Axios错误
   | Error                              // 标准错误对象
-  | string                             // 字符串类型的错误消息
+  | string                             // 字符串类型的错误消息;
 
 // 统一错误处理函数
 export const handleError = (err: EnhancedError) => {
   // 处理字符串类型错误
   if (typeof err === 'string') {
-    error.value = err
-    console.error('API Error:', err)
-    return
+    error.value = err;
+    console.error('API Error:', err);
+    return;
   }
 
   // 处理Error对象
   if (err instanceof Error) {
     // 类型断言为AxiosError
-    const axiosError = err as AxiosError<{ message?: string }>
+    const axiosError = err as AxiosError<{ message?: string }>;
     
     // 处理带响应的错误
     if (axiosError.response) {
       // 状态码映射
       const statusMessage = (() => {
         switch (axiosError.response.status) {
-          case 400: return '请求参数错误'
-          case 404: return '资源不存在'
-          case 415: return '不支持的媒体类型'
-          case 500: return '服务器内部错误'
-          default: return `请求失败 (${axiosError.response.status})`
+          case 400: return '请求参数错误';
+          case 404: return '资源不存在';
+          case 415: return '不支持的媒体类型';
+          case 500: return '服务器内部错误';
+          default: return `请求失败 (${axiosError.response.status})`;
         }
-      })()
+      })();
 
-      error.value = axiosError.response.data?.message || statusMessage
+      error.value = axiosError.response.data?.message || statusMessage;
       console.error('API Error:', {
         status: axiosError.response.status,
         message: axiosError.message,
         url: axiosError.config?.url,
         data: axiosError.response.data
-      })
+      });
     } 
     // 处理无响应的网络错误
     else if (axiosError.request) {
-      error.value = '网络连接异常，请检查网络'
-      console.error('Network Error:', axiosError.message)
+      error.value = '网络连接异常，请检查网络';
+      console.error('Network Error:', axiosError.message);
     }
     // 处理其他Error类型
     else {
-      error.value = err.message
-      console.error('Runtime Error:', err)
+      error.value = err.message;
+      console.error('Runtime Error:', err);
     }
   }
-}
+};
 
 export const checkBackendReady = () => {
   const interval = setInterval(async() => {
     try {
-      const response = await api.get('/status') 
+      const response = await api.get('/status');
       if(response.data.initialized){
-        clearInterval(interval)
-        console.log("后端初始化完成！")
-        initialized.value = response.data.initialized
+        clearInterval(interval);
+        console.log("后端初始化完成！");
+        initialized.value = response.data.initialized;
       }
     }catch (err: unknown) {
       // 类型安全的错误转换
       if (err instanceof Error) {
-        handleError(err)
+        handleError(err);
       } else {
-        handleError(String(err))
+        handleError(String(err));
       }
     }
   }, 1000);  // 每秒检查一次
-}
+};
 
 // 发送图片
 export const sendImageData = async (path : string) => {
@@ -107,15 +190,15 @@ export const sendImageData = async (path : string) => {
         "image_path": path,
         "project_name": projectName.value,
         "storage_path": projectPath.value,
-      })
+      });
       //在这里处理数据
-      console.log('upLoadImage 操作结果:', response.data)
+      console.log('upLoadImage 操作结果:', response.data);
   }catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }      
 };
@@ -126,36 +209,36 @@ export const sendCreateNewProject = async () => {
     const response = await api.post('/create-project', {
       "project_name": projectName.value,
       "storage_path": projectPath.value
-    })
-    console.log('create-project 操作结果:', response.data)
+    });
+    console.log('create-project 操作结果:', response.data);
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 打开项目
 export const sendOpenProject = async (): Promise<string> => {
   try {
     const response = await api.post<{ cache_path: string}>('/read-project', {
       "project_path": projectPath.value
-    })
-    console.log('read-project 操作结果:', response.data)
-    return response.data.cache_path
+    });
+    console.log('read-project 操作结果:', response.data);
+    return response.data.cache_path;
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
-    throw err
+    throw err;
   }
-}
+};
 
 // 切换图片
 export const sendSwitchImage = async () => {
@@ -164,17 +247,17 @@ export const sendSwitchImage = async () => {
       "image_name": imgPath.value.split('\\').pop().split('/').pop(),
       "project_name": projectName.value,
       "project_path": projectPath.value 
-    })
-    console.log('switch_image 操作结果:', response.data)
+    });
+    console.log('switch_image 操作结果:', response.data);
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 发送点请求
 export const sendPointData = async() => {
@@ -186,20 +269,20 @@ export const sendPointData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    })
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    });
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 发送撤销点请求
 export const sendUndoPointData = async() => {
@@ -211,20 +294,20 @@ export const sendUndoPointData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    })
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    });
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 发送反撤销点请求
 export const sendRedoPointData = async() => {
@@ -236,20 +319,20 @@ export const sendRedoPointData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    })
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    });
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 发送框
 export const sendBoxData = async() => {
@@ -261,20 +344,20 @@ export const sendBoxData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    })
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    });
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 发送撤销框
 export const sendUndoBoxData = async() => {
@@ -286,20 +369,20 @@ export const sendUndoBoxData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    })
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    });
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }  
-}
+};
 
 // 发送反撤销框
 export const sendRedoBoxData = async() => {
@@ -311,20 +394,20 @@ export const sendRedoBoxData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    }) 
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    }); 
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }  
-}
+};
 
 // 发送清空请求
 export const sendResetData = async() => {
@@ -336,20 +419,20 @@ export const sendResetData = async() => {
       "project_name": projectName.value,
       "storage_path": projectPath.value,
       "image_name": imgPath.value.split('\\').pop().split('/').pop()
-    })
-    console.log('Prompt 操作结果:', response.data)
-    tempMaskMatrix.value = response.data.masks
-    if (!response.data.clip_result) myAllClassList.clearClassesProbability()
-    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>)
+    });
+    console.log('Prompt 操作结果:', response.data);
+    tempMaskMatrix.value = response.data.masks;
+    if (!response.data.clip_result) myAllClassList.clearClassesProbability();
+    else myAllClassList.updateClassesProbability(Object.values(response.data.clip_result) as Array<AllClassItem>);
   }  catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 增加mask
 export const sendAddMaskAnnotation = async (classId: string, masks: Array<Array<number>>) : Promise<string> => {
@@ -360,19 +443,19 @@ export const sendAddMaskAnnotation = async (classId: string, masks: Array<Array<
         "class_id": classId,
         "masks": masks
       }
-    })
-    console.log('annotation-tools/prompt 操作结果:', response.data)
-    return response.data.mask_id
+    });
+    console.log('annotation-tools/prompt 操作结果:', response.data);
+    return response.data.mask_id;
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
-    throw err
+    throw err;
   }
-}
+};
 
 // 删除mask
 export const sendRemoveMaskAnnotation = async (maskId: string) => {
@@ -380,34 +463,34 @@ export const sendRemoveMaskAnnotation = async (maskId: string) => {
     const response = await api.post('/annotation-tools/prompt', {
       "operation": 1,
       "mask_id": maskId
-    })
-    console.log('annotation-tools/prompt 操作结果:', response.data)
+    });
+    console.log('annotation-tools/prompt 操作结果:', response.data);
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 获取类别
 export const sendGetCategoryAnnotation = async () => {
   try {
     const response = await api.post('/annotation-tools/prompt', {
       "operation": 3
-    })
-    console.log('annotation-tools/prompt 操作结果:', response.data)
+    });
+    console.log('annotation-tools/prompt 操作结果:', response.data);
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 增加类别
 export const sendAddCategoryAnnotation = async (className: string): Promise<string> => {
@@ -415,19 +498,19 @@ export const sendAddCategoryAnnotation = async (className: string): Promise<stri
     const response = await api.post<{ class_id: string }>('/annotation-tools/prompt', {
       "operation": 4,
       "class_name": className
-    })
-    console.log('annotation-tools/prompt 操作结果:', response.data)
-    return response.data.class_id
+    });
+    console.log('annotation-tools/prompt 操作结果:', response.data);
+    return response.data.class_id;
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
-    throw err
+    throw err;
   }
-}
+};
 
 // 导出当前图片Mask
 export const sendExportCurrentImage = async (imageId: Array<string>) => {
@@ -436,17 +519,17 @@ export const sendExportCurrentImage = async (imageId: Array<string>) => {
       "image_id": imageId,
       "project_name": projectName.value,
       "project_path": projectPath.value
-    })
-    console.log('export 操作结果:', response.data)
+    });
+    console.log('export 操作结果:', response.data);
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
 
 // 导出所有图片Mask
 export const sendExoprtAllImage = async (imageIdList: Array<string>) => {
@@ -455,14 +538,14 @@ export const sendExoprtAllImage = async (imageIdList: Array<string>) => {
       "image_id": imageIdList,
       "project_name": projectName.value,
       "project_path": projectPath.value
-    })
-    console.log('export 操作结果:', response.data)
+    });
+    console.log('export 操作结果:', response.data);
   } catch (err: unknown) {
     // 类型安全的错误转换
     if (err instanceof Error) {
-      handleError(err)
+      handleError(err);
     } else {
-      handleError(String(err))
+      handleError(String(err));
     }
   }
-}
+};
