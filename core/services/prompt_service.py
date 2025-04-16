@@ -25,7 +25,7 @@ class OperationManager:
             "boxes": []
         }
         return "All operations cleared", None
-    async def add(self, request, img_embeddings, img_file, image_id, classes_features):
+    async def add(self, request, img_embeddings, img_file, image_id, classes_features, image_pre_features, shape_dict):
         """Add operation"""
         clip_result = None
         if request.type == 0:  # foreground
@@ -47,7 +47,7 @@ class OperationManager:
 
         results = await asyncio.gather(
             asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
-            asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+            asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features, image_pre_features, shape_dict)
         )
         masks, logits = results[0]  
         clip_result = results[1]   
@@ -57,7 +57,7 @@ class OperationManager:
         #return "Added successfully", None , clip_result #测试版本保留
         return "Added successfully", masks, clip_result
 
-    async def undo(self, img_embeddings, img_file, image_id, classes_features):
+    async def undo(self, img_embeddings, img_file, image_id, classes_features, image_pre_features, shape_dict):
         """Undo operation"""
         if not hasattr(self, 'history') or not isinstance(self.history, list):
             raise AttributeError("self.history is not initialized or not a list")
@@ -102,7 +102,7 @@ class OperationManager:
             try:
                 results = await asyncio.gather(
                     asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
-                    asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+                    asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features, image_pre_features, shape_dict)
                 )
                 masks, logits = results[0]  
                 clip_result = results[1]  
@@ -116,7 +116,7 @@ class OperationManager:
 
         return "No operation to undo", None, None
 
-    async def redo(self, img_embeddings, img_file, image_id, classes_features):
+    async def redo(self, img_embeddings, img_file, image_id, classes_features, image_pre_features, shape_dict):
         """Redo operation"""
         if self.future:
             operation, request, logits = self.future.pop()
@@ -145,7 +145,7 @@ class OperationManager:
             logits = self.history[-2][2] if len(self.history)>=2 else None
             results = await asyncio.gather(
                 asyncio.to_thread(generate_mask, 'add', self.current_state, img_embeddings, img_file, logits),
-                asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features)
+                asyncio.to_thread(clip_class, 'add', self.current_state, image_id, classes_features, image_pre_features, shape_dict)
             )
             masks, logits = results[0]  
             clip_result = results[1]  
@@ -203,22 +203,22 @@ class OperationManager:
 
 
 manager = OperationManager()
-async def process_prompt(request: PromptRequest, img_embeddings, img_file, classes_features) -> PromptResponse:
+async def process_prompt(request: PromptRequest, img_embeddings, img_file, classes_features, image_pre_features, shape_dict) -> PromptResponse:
     global manager
     clip_result = None
     image_id = cache_manager.find_key_by_value(cache_manager.image_id_cache, request.image_name)
 
     if request.operation == 0:  # add
-        result, receive_masks, clip_result = await manager.add(request, img_embeddings, img_file, image_id,classes_features)
+        result, receive_masks, clip_result = await manager.add(request, img_embeddings, img_file, image_id,classes_features, image_pre_features, shape_dict)
 
     elif request.operation == 1:  # undo
-        result, receive_masks, clip_result = await manager.undo(img_embeddings, img_file, image_id,classes_features)
+        result, receive_masks, clip_result = await manager.undo(img_embeddings, img_file, image_id,classes_features,image_pre_features, shape_dict)
 
     elif request.operation == 2:  # reset
         result, receive_masks = manager.reset()
 
     elif request.operation == 3:  # redo
-        result, receive_masks, clip_result = await manager.redo(img_embeddings, img_file, image_id,classes_features)
+        result, receive_masks, clip_result = await manager.redo(img_embeddings, img_file, image_id,classes_features,image_pre_features, shape_dict)
 
     # elif request.operation == 4:  # remove
     #     result, receive_masks = manager.remove(request, img_embeddings, img_file)
