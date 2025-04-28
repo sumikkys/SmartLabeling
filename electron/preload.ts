@@ -1,6 +1,5 @@
 import { ipcRenderer, contextBridge } from 'electron'
 
-
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
   on(...args: Parameters<typeof ipcRenderer.on>) {
@@ -20,7 +19,7 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
     return ipcRenderer.invoke(channel, ...omit)
   },
 
-  // You can expose other APTs you need here.
+  // You can expose other APIs you need here.
   // ...
 })
 
@@ -28,4 +27,11 @@ contextBridge.exposeInMainWorld('electron', {
   loadFilesDialog: () => ipcRenderer.invoke('loadFiles'),
   selectDirectoryDialog: (title: string) => ipcRenderer.invoke('selectDirectory', title),
   readJSON: (path: string) => ipcRenderer.invoke('read-json-file', path),
+
+  // Expose WebSocket message listener
+  onWebSocketMessage: (callback: (message: string) => void) => {
+    ipcRenderer.on('websocket-message', (_, message) => {
+      callback(message)
+    })
+  },
 })

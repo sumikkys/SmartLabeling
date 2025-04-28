@@ -8,6 +8,7 @@
   import { isSwitch, checkBackendReady, sendSwitchImage, sendResetData } from '../ts/Telegram'
   import { sendPointData, sendUndoPointData, sendRedoPointData } from '../ts/Telegram'
   import { sendBoxData, sendUndoBoxData, sendRedoBoxData } from '../ts/Telegram'
+  import { checkBackendReady_WebSocket } from '../ts/Telegram_WebSocket'
   import AwaitBackend from '../components/AwaitBackend.vue'
   import AwaitLoadImage from '../components/AwaitLoadImage.vue'
 
@@ -30,7 +31,7 @@
       type: 'module'
     })
     draw_Image(imgURL.value) // 初始绘制图片
-    checkBackendReady()
+    checkBackendReady_WebSocket()
   })
 
   // 异步初始化临时遮罩矩阵

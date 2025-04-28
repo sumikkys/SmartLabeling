@@ -6,6 +6,7 @@ import path from 'node:path'
 import { spawn, ChildProcess } from 'child_process'
 import fs from 'fs'
 import kill from 'tree-kill'
+import WebSocket from 'ws'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -100,6 +101,34 @@ function createPythonProcess() {
   })
 }
 
+let ws: WebSocket | null = null;
+
+function connectWebSocket() {
+  const wsUrl = 'ws://127.0.0.1:8232/ws/status'; // 确保地址正确
+  ws = new WebSocket(wsUrl);
+
+  ws.on('open', () => {
+    console.log('WebSocket 连接已建立');
+    ws?.send('ping'); // 可选：发送初始消息
+  });
+
+  ws.on('message', (data) => {
+    console.log('收到 WebSocket 消息:', data.toString());
+    if (win) {
+      win.webContents.send('websocket-message', data.toString());
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('WebSocket 连接已关闭，1秒后重试...');
+    setTimeout(connectWebSocket, 1000); // 重试连接
+  });
+
+  ws.on('error', (error) => {
+    console.error('WebSocket 错误:', error);
+  });
+}
+
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
@@ -139,8 +168,9 @@ app.on('before-quit', (event) => {
 // app.whenReady().then(createWindow).then(createPythonProcess)
 
 app.whenReady().then(() => {
-  createWindow()
-  createPythonProcess()
+  createWindow();
+  createPythonProcess();
+  connectWebSocket(); // 启动 WebSocket 客户端连接
 
   // 监听渲染进程的文件选择请求
   ipcMain.handle('loadFiles', async () => {

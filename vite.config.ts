@@ -43,7 +43,7 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
       '/ws': {
-        target: 'ws://127.0.0.1:8000/ws/status',
+        target: 'ws://127.0.0.1:8232/ws/status',
         ws: true
       },
     },
