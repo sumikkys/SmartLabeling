@@ -8,9 +8,12 @@ from copy import deepcopy
 from utils import *
 from fastapi import FastAPI, File, UploadFile
 from PIL import Image
-import io
+import logging
 import numpy as np
 import cv2
+from routers.polling_ws import  update_status
+from cache.initialize_cache import initialize_manager
+
 
 
 class SamEncoder:
@@ -52,11 +55,22 @@ class SamEncoder:
         self.pixel_mean = np.array([123.675, 116.28, 103.53])
         self.pixel_std = np.array([58.395, 57.12, 57.375])
         self.input_size = (self.input_shape[-1], self.input_shape[-2]) # 256,256
+        self._warmup_epoch = warmup_epoch
+        # if warmup_epoch:
+        #     self.warmup(warmup_epoch)
 
+    @classmethod
+    async def create(cls,
+                    model_path: str,
+                    device: str = "cuda",
+                    warmup_epoch: int = 3,
+                    **kwargs):
+        instance = cls(model_path, device, warmup_epoch, **kwargs)
         if warmup_epoch:
-            self.warmup(warmup_epoch)
-
-    def warmup(self, epoch: int) -> None:
+            await instance.warmup(warmup_epoch)
+        return instance
+    
+    async def warmup(self, epoch: int) -> None:
         """warmup function
 
         Args:
@@ -67,6 +81,12 @@ class SamEncoder:
         for i in tqdm(range(epoch)):
             self.session.run(None, {self.input_name: x})
         print("warmup finish!")
+        try:
+            initialize_manager.set_SAM_initialized(True)
+            await update_status()
+            
+        except Exception as e:
+            logging.error(f"SAM初始化失败: {e}")
         
 
     def transform(self, img: np.ndarray) -> np.ndarray:

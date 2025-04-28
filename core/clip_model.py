@@ -9,8 +9,10 @@ from utils import *
 from fastapi import FastAPI, File, UploadFile
 import numpy as np
 import cv2
-from routers import polling
+import logging
+from routers.polling_ws import update_status
 from tokenizer import tokenize
+from cache.initialize_cache import initialize_manager
 
 
 
@@ -43,13 +45,22 @@ class CLIPVisionEncoder:
         
         self.input_size = self.image_shape[-1]
         self.input_shape = (1,3, self.input_size, self.input_size)
-
-        if warmup_epoch:
-            self.warmup(warmup_epoch)
+        self._warmup_epoch = warmup_epoch
+        # if warmup_epoch:
+            # self.warmup(warmup_epoch)
             
-        
+    @classmethod
+    async def create(cls,
+                    model_path: str,
+                    device: str = "cuda",
+                    warmup_epoch: int = 3,
+                    **kwargs):
+        instance = cls(model_path, device, warmup_epoch, **kwargs)
+        if warmup_epoch:
+            await instance.warmup(warmup_epoch)
+        return instance
 
-    def warmup(self, epoch: int) -> None:
+    async def warmup(self, epoch: int) -> None:
         """warmup function
 
         Args:
@@ -63,7 +74,11 @@ class CLIPVisionEncoder:
         for i in tqdm(range(epoch)):
             self.session.run(None, {self.input_name[0]: x})
         print("warmup finish!")
-        polling.initialized = True
+        try:
+            initialize_manager.set_CLIP_initialized(True)
+            await update_status()
+        except Exception as e:
+            logging.error(f"CLIP初始化失败: {e}")
 
     def transform(self, image: np.ndarray) -> np.ndarray:
         """

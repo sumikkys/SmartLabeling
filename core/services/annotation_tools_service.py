@@ -5,7 +5,7 @@ from utils import normalize, softmax, top_k
 from initialize_model import clip_text_encoder
 import numpy as np
 
-# 在文件开头添加全局计数器
+# 全局计数器
 class GlobalCounter:
     def __init__(self):
         self.class_counter = "1"  # 初始化为字符串 "1"

@@ -1,7 +1,7 @@
-import cv2
 from sam_model import SamEncoder, SamDecoder
 from clip_model import CLIPTextEncoder, CLIPVisionEncoder, CLIPRegionEncoder
 import os
+import asyncio
 
 encoder = None
 decoder = None
@@ -10,7 +10,7 @@ clip_text_encoder = None
 clip_vision_encoder = None
 clip_region_encoder = None
 
-def initialize_models():
+async def initialize_models():
     global encoder, decoder, clip_text_encoder, clip_vision_encoder, clip_region_encoder
 
     base_path = os.path.dirname(__file__)
@@ -31,7 +31,7 @@ def initialize_models():
     device="cpu"
     )
 
-    encoder = SamEncoder(
+    encoder = await SamEncoder.create(
         model_path=encoder_path,
         warmup_epoch=3,
         device="cpu"
@@ -41,9 +41,9 @@ def initialize_models():
         device="cpu",
     )
     
-    clip_vision_encoder = CLIPVisionEncoder(
+    clip_vision_encoder = await CLIPVisionEncoder.create(
         model_path=vision_encoder_path,
         device="cpu"
     )
 
-initialize_models()
+asyncio.run(initialize_models())
