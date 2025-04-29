@@ -5,7 +5,7 @@
   import { Boxes, send_box } from '../ts/Boxes'
   import { imgPath, imgURL, isLoading, myFiles } from '../ts/Files'
   import { tempMaskMatrix, isWindowChange } from '../ts/Masks'
-  import { isSwitch, checkBackendReady, sendSwitchImage, sendResetData } from '../ts/Telegram'
+  import { isSwitch, sendSwitchImage, sendResetData } from '../ts/Telegram'
   import { sendPointData, sendUndoPointData, sendRedoPointData } from '../ts/Telegram'
   import { sendBoxData, sendUndoBoxData, sendRedoBoxData } from '../ts/Telegram'
   import { checkBackendReady_WebSocket } from '../ts/Telegram_WebSocket'
