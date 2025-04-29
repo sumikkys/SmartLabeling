@@ -14,6 +14,9 @@ export default defineConfig({
         vite: {
           build: {
             outDir: 'dist-electron',
+            rollupOptions: {
+              external: ['ws', 'electron', 'tree-kill']  // 添加 ws 到 external
+            }
           }
         }
       },
