@@ -12,7 +12,7 @@ import WebSocket from 'ws'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 let python: ChildProcess | null = null;
-const logStream = fs.createWriteStream(path.join(__dirname, 'backend.log'), { flags: 'a' })
+// const logStream = fs.createWriteStream(path.join(__dirname, 'backend.log'), { flags: 'a' })
 
 
 // The built directory structure
@@ -86,18 +86,18 @@ function createPythonProcess() {
   python.stdout?.on('data', (data) => {
     const message = data.toString()
     console.log(`Backend: ${message}`)
-    logStream.write(`[STDOUT] ${message}\n`)
+    // logStream.write(`[STDOUT] ${message}\n`)
   })
 
   python.stderr?.on('data', (data) => {
     const message = data.toString()
     console.log(`Backend: ${message}`)
-    logStream.write(`[STDERR] ${message}\n`)
+    // logStream.write(`[STDERR] ${message}\n`)
   })
 
   python.on('close', (code) => {
     console.log(`Python 进程退出，退出码: ${code}`);
-    logStream.write(`[EXIT] Python 进程退出，退出码: ${code}\n`);
+    // logStream.write(`[EXIT] Python 进程退出，退出码: ${code}\n`);
   })
 }
 
