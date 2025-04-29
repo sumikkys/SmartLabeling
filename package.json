@@ -1,9 +1,10 @@
 {
   "name": "smartlabeling",
-  "version": "0.0.1",
+  "author": "SmartLabeling Team",
+  "description": "About A data labeling tool with AI from Segment Anything and other models.",
   "private": true,
+  "version": "0.0.1",
   "type": "module",
-  "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
