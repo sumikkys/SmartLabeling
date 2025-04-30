@@ -1,5 +1,4 @@
 fastapi~=0.115.8
-matplotlib~=3.10.0
 numpy~=1.26.4
 onnxruntime~=1.17.1
 opencv_python~=4.10.0.84
