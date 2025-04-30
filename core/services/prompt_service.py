@@ -68,7 +68,7 @@ class OperationManager:
             try:
                 operation, request, logits = self.history.pop()
             except IndexError:
-                return "No operation to undo", None
+                return "No operation to undo", None, None
 
             self.future.append([operation, request, logits])
 
@@ -95,7 +95,7 @@ class OperationManager:
                     self.current_state["boxes"].append(request.position)
 
             if not self.history:
-                return "back to original", None
+                return "back to original", None, None
 
             logits = self.history[-2][2] if len(self.history)>=2 else None
 
@@ -109,7 +109,7 @@ class OperationManager:
 
                 self.history[-1][2] = logits
             except Exception as e:
-                return f"Error generating mask: {str(e)}", None
+                return f"Error generating mask: {str(e)}", None, None
 
             return "Undo operation completed", masks, clip_result
             # return "Undo operation completed", None, clip_result #测试版本保留
