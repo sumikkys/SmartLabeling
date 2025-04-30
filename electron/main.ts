@@ -37,7 +37,7 @@ let win: BrowserWindow | null
 function createWindow() {
   win = new BrowserWindow({
     icon: app.isPackaged 
-      ? path.join(process.resourcesPath, 'public', 'SmartLabeling.ico')  // 生产环境
+      ? path.join(process.resourcesPath, 'app.asar', 'public', 'SmartLabeling.ico')  // 生产环境
       : path.join(__dirname, '../public/SmartLabeling.ico'),             // 开发环境
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
@@ -74,7 +74,7 @@ function createWindow() {
 function createPythonProcess() {
   // 启动 Python 后端
   const pythonScriptPath = app.isPackaged 
-    ? path.join(process.resourcesPath!, 'core/main.py')
+    ? path.join(process.resourcesPath!, 'app.asar.unpacked', 'core', 'main.py')
     : path.join(__dirname, '../core/main.py')
 
   const args = [pythonScriptPath, '--host', 'localhost', '--port', '8232']

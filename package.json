@@ -51,6 +51,10 @@
     "directories": {
       "output": "release"
     },
+    "asar" : true,
+    "asarUnpack": [
+      "core/**/*"
+    ],
     "win": {
       "target": "nsis",
       "icon": "public/SmartLabeling.ico",
