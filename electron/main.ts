@@ -104,7 +104,9 @@ function createPythonProcess() {
 let ws: WebSocket | null = null;
 
 function connectWebSocket() {
-  const wsUrl = 'ws://127.0.0.1:8232/ws/status'; // 确保地址正确
+  const wsUrl = app.isPackaged
+    ? 'ws://127.0.0.1:8000/ws/status'  // 生产环境
+    : 'ws://127.0.0.1:8232/ws/status'; // 开发环境
   ws = new WebSocket(wsUrl);
 
   ws.on('open', () => {

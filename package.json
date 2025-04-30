@@ -54,6 +54,7 @@
     },
     "win": {
       "target": "nsis",
+      "icon": "public/SmartLabeling.ico",
       "signAndEditExecutable": false
     },
     "mac": {
@@ -64,9 +65,11 @@
     },
     "nsis": {
       "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "public/SmartLabeling.ico",
       "perMachine": true,
-      "deleteAppDataOnUninstall": true,
-      "license": "LICENSE.txt"
+      "deleteAppDataOnUninstall": true
     }
   }
 }
