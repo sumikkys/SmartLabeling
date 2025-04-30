@@ -36,7 +36,9 @@ let win: BrowserWindow | null
 
 function createWindow() {
   win = new BrowserWindow({
-    icon: path.join(process.env.VITE_PUBLIC, 'electron-vite.svg'),
+    icon: app.isPackaged 
+      ? path.join(process.resourcesPath, 'public', 'SmartLabeling.ico')  // 生产环境
+      : path.join(__dirname, '../public/SmartLabeling.ico'),             // 开发环境
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       allowRunningInsecureContent: true, // 允许不安全的内容加载
